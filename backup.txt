@@ -1,0 +1,1996 @@
+CSS :
+/* Reset & theme tokens */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #6366f1;
+  --secondary: #8b5cf6;
+  --accent: #ec4899;
+  --warning: #f59e0b;
+  --success: #10b981;
+  --info: #3b82f6;
+  --dark: #1e293b;
+  --light: #f8fafc;
+  --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  --gradient-5: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  --gradient-6: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+  --glass: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.18);
+}
+
+body {
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #1a1c3d 0%, #2d1b69 50%, #0f0c29 100%);
+  color: var(--light);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSg0NSkiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0icmdiYSgyNTUsIDI1NSwgMjU1LCAwLjAzKSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNwYXR0ZXJuKSIvPjwvc3ZnPg==");
+  z-index: -1;
+  opacity: 0.4;
+}
+
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 280px;
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-right: 1px solid var(--glass-border);
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  padding: 0 25px 30px;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 20px;
+}
+.logo-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--gradient-1);
+  border-radius: 16px;
+  margin-right: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  font-size: 24px;
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.logo span {
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #fff, #c7d2fe);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 0 15px;
+  flex: 1;
+  overflow-y: auto;
+}
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.nav-link::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  transition: width 0.3s ease;
+  z-index: -1;
+  opacity: 0.7;
+}
+.nav-link:hover {
+  color: #fff;
+  transform: translateX(5px);
+}
+.nav-link:hover::before {
+  width: 100%;
+}
+.nav-link.active {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+}
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  right: 20px;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Welcome */
+.welcome-message {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 50px;
+  border-radius: 24px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  max-width: 700px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+.welcome-message::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.2) 0%,
+    transparent 70%
+  );
+  animation: pulse 4s ease-in-out infinite;
+  z-index: -1;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+.welcome-message h2 {
+  font-size: 38px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  background: linear-gradient(90deg, #fff, #a5b4fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+}
+.welcome-message p {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Cards grid */
+.subscription-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 25px;
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.subscription-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.subscription-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-1);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+.subscription-card:nth-child(2n)::before {
+  background: var(--gradient-2);
+}
+.subscription-card:nth-child(3n)::before {
+  background: var(--gradient-3);
+}
+.subscription-card:nth-child(4n)::before {
+  background: var(--gradient-4);
+}
+.subscription-card:nth-child(5n)::before {
+  background: var(--gradient-5);
+}
+.subscription-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+  border-color: transparent;
+}
+.subscription-card:hover::before {
+  opacity: 0.8;
+}
+.subscription-card:hover .icon-container {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1) rotate(5deg);
+}
+.icon-container {
+  font-size: 40px;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition: all 0.4s ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+.card-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+.card-description {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+/* Notification */
+.notification-container {
+  width: 100%;
+  max-width: 1200px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  margin: 0 auto;
+}
+.tab-header {
+  display: flex;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+}
+.tab-button {
+  flex: 1;
+  padding: 20px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.tab-button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+.tab-button.active {
+  color: #fff;
+}
+.tab-button.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-1);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+}
+.tab-content {
+  min-height: 500px;
+  padding: 30px;
+  display: none;
+  animation: fadeIn 0.5s ease;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tab-content.active {
+  display: block;
+}
+.tab-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+}
+.page-embed {
+  width: 100%;
+  height: 600px;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.btn {
+  padding: 12px 24px;
+  background: var(--gradient-1);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+  z-index: -1;
+}
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(99, 102, 241, 0.5);
+}
+.btn:hover::before {
+  transform: translateX(0);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* Animated blobs */
+.bg-blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  z-index: -1;
+  animation: float-blob 20s infinite ease-in-out;
+}
+@keyframes float-blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+.blob-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--primary);
+  top: -100px;
+  right: -100px;
+}
+.blob-2 {
+  width: 300px;
+  height: 300px;
+  background: var(--accent);
+  bottom: -50px;
+  left: -50px;
+  animation-delay: 2s;
+}
+.blob-3 {
+  width: 350px;
+  height: 350px;
+  background: var(--secondary);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: 5s;
+}
+
+/* Company Details */
+.company-container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.company-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 5px;
+}
+.company-subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 30px;
+}
+
+.tab-button-company {
+  flex: 0 auto;
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  margin-right: 10px;
+  border-radius: 8px 8px 0 0;
+}
+.tab-button-company:hover {
+  color: #fff;
+}
+.tab-button-company.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+.tab-button-company .tab-icon {
+  margin-right: 8px;
+}
+.tab-content-company {
+  padding: 30px;
+  display: none;
+}
+.tab-content-company.active {
+  display: block;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 5px;
+}
+.section-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 30px;
+}
+
+form {
+  display: grid;
+  gap: 20px;
+}
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+input[type="text"] {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+}
+input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+.logo-group {
+  align-items: flex-start;
+}
+.logo-upload {
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+}
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+.upload-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+.logo-upload p {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 8px;
+}
+#logo-preview {
+  max-width: 100%;
+  max-height: 100px;
+  margin-top: 10px;
+}
+.save-btn {
+  width: fit-content;
+  align-self: flex-end;
+  background: var(--primary);
+  border-radius: 8px;
+}
+
+/* ---------- NEW: Payment Methods modal + list ---------- */
+.icon-pill.type1 {
+  background: rgba(0, 128, 255, 0.2);
+}
+.icon-pill.type2 {
+  background: rgba(255, 128, 0, 0.2);
+}
+
+.modal-overlay {
+  /* CHANGE: absolute → fixed so it anchors to the viewport */
+  position: fixed;
+  inset: 0;
+
+  display: none;
+  /* CHANGE: center → start so we can push it down */
+  align-items: flex-start;
+  justify-content: center;
+
+  /* ADD: push the modal a bit down from the top (adjust the value to taste) */
+  padding-top: 8vh;
+
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 9999;
+}
+.modal {
+  width: 680px;
+  max-width: 95vw;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+}
+.modal-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.modal-row .form-group {
+  flex: 1;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.icon-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.icon-pill {
+  width: 64px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+  font-weight: 700;
+  color: #fff;
+}
+.icon-pill:hover {
+  transform: translateY(-1px);
+}
+.icon-pill.active {
+  outline: 2px solid var(--primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25);
+  background: rgba(99, 102, 241, 0.18);
+}
+
+.payment-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.payment-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+.payment-card .title {
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.payment-card .meta {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+.payment-card .icon-pill {
+  width: 48px;
+  height: 36px;
+}
+
+/* Dropdown styling to match input fields */
+input[type="text"],
+select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+}
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMTIgMTVsLTUtNSAxMCAwLTE1IDV6Ii8+PC9zdmc+");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 12px;
+}
+
+/* Icon-specific backgrounds for colorful ATM card-like representations */
+.icon-pill[data-icon="visa"] {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iIzFBMUY3MSIgLz48dGV4dCB4PSI0IiB5PSIxOCIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTIiIGZvbnQtd2VpZ2h0PSJib2xkIj5WSVNBPC90ZXh0Pjwvc3ZnPg==");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.icon-pill[data-icon="mastercard"] {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iI0VCMDAxQiIgLz48dGV4dCB4PSIzIiB5PSIxOCIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTIiIGZvbnQtd2VpZ2h0PSJib2xkIj5NQzwvdGV4dD48L3N2Zz4=");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.icon-pill[data-icon="paypal"] {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iIzAwMzA4NyIgLz48dGV4dCB4PSIyIiB5PSIxOCIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIj5QYXlQYWw8L3RleHQ+PC9zdmc+");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.icon-pill[data-icon="amex"] {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iIzJFNzdCQyIgLz48dGV4dCB4PSIyIiB5PSIxOCIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTIiIGZvbnQtd2VpZ2h0PSJib2xkIj5BTUVYPC90ZXh0Pjwvc3ZnPg==");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.icon-pill[data-icon="applepay"] {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iIzAwMDAwMCIgLz48dGV4dCB4PSIyIiB5PSIxOCIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIj5BcHBsZSBQYXk8L3RleHQ+PC9zdmc+");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.icon-pill[data-icon="googlepay"] {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iIzQyODVGNCIgLz48dGV4dCB4PSIyIiB5PSIxOCIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIj5Hb29nbGUgUGF5PC90ZXh0Pjwvc3ZnPg==");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.icon-pill[data-icon="bank"] {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTQgMTB2MTFoMnYtOWgxMnY5aDJWMTBMMTIgNkw0IDEwem04IDNoLTJ2LTJoMnYyem02LTN2MmgtMnYtMmgyem0tMiA0aC0ydi0yaDJ2MnptLTQgMGgtMnYtMmgydjJ6bS00IDBoLTJ2LTJoMnYyem0tNC00djJoLTJ2LTJoMnptMTQgNHY2aC0ydi02aDJ6bS00IDB2NmgtMnYtNmgyem0tNCAwdjZoLTJ2LTZoMnptLTQgMHY2aC0ydi02aDJ6bS00IDB2NmgtMnYtNmgyeiIgZmlsbD0iIzIxOTZGMyIgLz48L3N2Zz4=");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.icon-pill[data-icon="cash"] {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTMgNmgxOHY1aDJWNEgxdjVoMlY2em0tMiA3aDIydjdoLTJ2LTVoLTE4djVIMXYtN3ptNCA5aDE0di01SDV2NXptNi0zaDJ2LTFoLTJ2MXoiIGZpbGw9IiM0Q0FGNTAiIC8+PC9zdmc+");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.icon-pill[data-icon="other"] {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTQgNmgxNnYySDIR6bTAgNGgxNnYySDIR6bTAgNGgxNnYySDIR6bTAgNGgxNnYySDIR6IiBmaWxsPSIjRkY5ODAwIiAvPjwvc3ZnPg==");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Enhance icon-pill for card-like appearance */
+.icon-pill {
+  width: 64px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+  color: transparent; /* Hide text labels */
+}
+.icon-pill:hover {
+  transform: translateY(-1px);
+}
+.icon-pill.active {
+  outline: 2px solid var(--primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25);
+  background-color: rgba(99, 102, 241, 0.18);
+}
+
+
+JS:
+// Make InvokeExtensibilityMethod safe in browser preview
+Microsoft.Dynamics.NAV.InvokeExtensibilityMethod =
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod || function () {};
+
+// Bootstrap
+document.addEventListener("DOMContentLoaded", function () {
+  initializeDashboard();
+  createAnimatedBackground();
+});
+
+// Blobs
+function createAnimatedBackground() {
+  const body = document.body;
+  ["blob-1", "blob-2", "blob-3"].forEach((cls) => {
+    const d = document.createElement("div");
+    d.className = "bg-blob " + cls;
+    body.appendChild(d);
+  });
+}
+
+// App shell
+function initializeDashboard() {
+  document.body.innerHTML = getDashboardHTML();
+  setupNavigation();
+}
+
+function getDashboardHTML() {
+  return `
+    <div class="dashboard-container">
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">S</div>
+          <span>SubsTracker</span>
+        </div>
+        <nav class="nav-menu">
+          <a href="#" class="nav-link active">Dashboard</a>
+          <a href="#" class="nav-link">Initial Setup</a>
+          <a href="#" class="nav-link">Subscription</a>
+          <a href="#" class="nav-link">Compliance</a>
+          <a href="#" class="nav-link">Notification</a>
+          <a href="#" class="nav-link">Company Information</a>
+        </nav>
+      </aside>
+      <main class="main-content">
+        <div class="welcome-message">
+          <h2>Welcome to SubsTracker</h2>
+          <p>Select an option from the sidebar to navigate to different sections.</p>
+        </div>
+      </main>
+    </div>
+  `;
+}
+
+function setupNavigation() {
+  const navLinks = document.querySelectorAll(".nav-link");
+  navLinks.forEach((link) => {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      const pageName = this.textContent.trim();
+      setActiveNavigation(pageName);
+      if (pageName === "Subscription") {
+        showSubscriptionButtons();
+      } else if (pageName === "Compliance") {
+        showComplianceButtons();
+      } else if (pageName === "Notification") {
+        showNotificationTabs();
+      } else if (pageName === "Company Information") {
+        Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+          pageName,
+        ]);
+      } else if (pageName === "Initial Setup") {
+        Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+          pageName,
+        ]);
+      } else {
+        Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+          pageName,
+        ]);
+      }
+    });
+  });
+}
+
+function setActiveNavigation(pageName) {
+  const navLinks = document.querySelectorAll(".nav-link");
+  navLinks.forEach((link) => {
+    link.classList.remove("active");
+    if (link.textContent.trim() === pageName) link.classList.add("active");
+  });
+}
+
+/* ------- Subscriptions & Compliance quick-cards ------- */
+function showSubscriptionButtons() {
+  const mainContent = document.querySelector(".main-content");
+  mainContent.innerHTML = `
+    <div class="subscription-grid">
+      ${createSubscriptionCard(
+        "Add Subscription",
+        "Create new subscription plans and add customers",
+        "✨"
+      )}
+      ${createSubscriptionCard(
+        "Manage Subscriptions",
+        "View, update, or delete existing subscriptions",
+        "⚙️"
+      )}
+      ${createSubscriptionCard(
+        "Active Subscriptions",
+        "View currently active subscription plans",
+        "✅"
+      )}
+      ${createSubscriptionCard(
+        "Inactive Subscriptions",
+        "See subscriptions that are inactive",
+        "🚫"
+      )}
+      ${createSubscriptionCard(
+        "Renewals This Month",
+        "Track all upcoming renewals this month",
+        "📅"
+      )}
+    </div>
+  `;
+  animateCards();
+}
+
+function showComplianceButtons() {
+  const mainContent = document.querySelector(".main-content");
+  mainContent.innerHTML = `
+    <div class="subscription-grid">
+      ${createSubscriptionCard(
+        "Setup New Compliance Item",
+        "Add Compliance items",
+        "✨"
+      )}
+      ${createSubscriptionCard(
+        "Submit a Compliance",
+        "Add or submit compliance data",
+        "🗂️"
+      )}
+      ${createSubscriptionCard(
+        "View Submitted Compliance",
+        "See all compliance entries which was Submitted ",
+        "📬"
+      )}
+      ${createSubscriptionCard(
+        "Pending Compliance Submissions",
+        "Check compliance items that are pending",
+        "⏳"
+      )}
+      ${createSubscriptionCard(
+        "This Month’s Submissions",
+        "Track all submissions made this month",
+        "📆"
+      )}
+    </div>
+  `;
+  animateCards();
+}
+
+function createSubscriptionCard(title, description, icon) {
+  return `
+    <div class="subscription-card" onclick="navigateTo('${title.replace(
+      /'/g,
+      "\\'"
+    )}')">
+      <div class="icon-container">${icon}</div>
+      <div class="card-title">${title}</div>
+      <div class="card-description">${description}</div>
+    </div>
+  `;
+}
+
+function animateCards() {
+  setTimeout(() => {
+    const cards = document.querySelectorAll(".subscription-card");
+    cards.forEach((card, index) => {
+      card.style.opacity = "0";
+      card.style.transform = "translateY(30px)";
+      card.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+      setTimeout(() => {
+        card.style.opacity = "1";
+        card.style.transform = "translateY(0)";
+      }, index * 100);
+    });
+  }, 50);
+}
+
+function navigateTo(label) {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    label,
+  ]);
+}
+
+/* ---------------- Notification tabs ------------------- */
+function showNotificationTabs() {
+  const mainContent = document.querySelector(".main-content");
+  mainContent.innerHTML = `
+    <div class="notification-container">
+      <div class="tab-header">
+        <button class="tab-button active" onclick="switchTab('subscription')">Subscription</button>
+        <button class="tab-button" onclick="switchTab('compliance')">Compliance</button>
+      </div>
+      <div class="tab-content active" id="subscription-tab">
+        <div class="tab-loading" id="subscription-loading">Loading Subscription Notifications...</div>
+      </div>
+      <div class="tab-content" id="compliance-tab">
+        <div class="tab-loading" id="compliance-loading">Loading Compliance Notifications...</div>
+      </div>
+    </div>
+  `;
+  loadTabContent("subscription", 70132, "Subscription Notification");
+}
+
+function switchTab(tabName) {
+  const tabButtons = document.querySelectorAll(".tab-button");
+  tabButtons.forEach((button) => {
+    button.classList.remove("active");
+    if (button.textContent.toLowerCase() === tabName)
+      button.classList.add("active");
+  });
+  const tabContents = document.querySelectorAll(".tab-content");
+  tabContents.forEach((content) => content.classList.remove("active"));
+  const activeTab = document.getElementById(tabName + "-tab");
+  if (activeTab) activeTab.classList.add("active");
+
+  if (tabName === "subscription")
+    loadTabContent("subscription", 70132, "Subscription Notification");
+  else if (tabName === "compliance")
+    loadTabContent("compliance", 70131, "Notification");
+}
+
+function loadTabContent(tabName, pageId, pageTitle) {
+  const tabContent = document.getElementById(tabName + "-tab");
+  const loadingElement = document.getElementById(tabName + "-loading");
+  if (!tabContent || !loadingElement) return;
+  if (tabContent.querySelector(".page-embed")) return;
+
+  setTimeout(() => {
+    loadingElement.innerHTML = `
+      <div style="text-align:center; padding:20px;">
+        <h3 style="color:white; margin-bottom:20px; font-size:24px;">${pageTitle}</h3>
+        <div style="background: rgba(255,255,255,.1); backdrop-filter: blur(10px); padding:30px; border-radius:16px; border:1px solid rgba(255,255,255,.1);">
+          <p style="color: rgba(255,255,255,.8); margin-bottom:16px;">Business Central Page Integration</p>
+          <p style="color: rgba(255,255,255,.6); font-size:16px;">Page ID: ${pageId} - "${pageTitle}"</p>
+          <button class="btn" onclick="openBusinessCentralPage('${
+            tabName.charAt(0).toUpperCase() + tabName.slice(1)
+          } Notifications')">Open in Business Central</button>
+        </div>
+      </div>
+    `;
+  }, 500);
+}
+
+function openBusinessCentralPage(actionName) {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    actionName,
+  ]);
+}
+
+/* ------------------- Company page --------------------- */
+let logoBase64 = "";
+
+function displayCompanyInformation(companyData) {
+  const mainContent = document.querySelector(".main-content");
+  mainContent.innerHTML = `
+    <div class="company-container">
+      <h1 class="company-title">Company Details</h1>
+      <p class="company-subtitle">Manage company information, departments, employees, and system settings.</p>
+
+      <div class="tab-header">
+        <button class="tab-button-company active" onclick="switchCompanyTab('company')"><span class="tab-icon">📁</span> Company Information</button>
+        <button class="tab-button-company" onclick="switchCompanyTab('department')"><span class="tab-icon">📋</span> Department List</button>
+        <button class="tab-button-company" onclick="switchCompanyTab('employee')"><span class="tab-icon">👥</span> Employee</button>
+        <button class="tab-button-company" onclick="switchCompanyTab('subscription')"><span class="tab-icon">❄️</span> Subscription Category</button>
+        <button class="tab-button-company" onclick="switchCompanyTab('user')"><span class="tab-icon">👤</span> User Management</button>
+      </div>
+
+      <div class="tab-content-company active" id="company-tab">
+        <h3 class="section-title">Company Information</h3>
+        <p class="section-subtitle">Update your company details and branding</p>
+
+        <form id="company-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="company-name">Company Name</label>
+              <input type="text" id="company-name" value="${
+                companyData.general.name || ""
+              }" placeholder="Enter company name">
+            </div>
+            <div class="form-group logo-group">
+              <label>Company Logo</label>
+              <div class="logo-upload">
+                <input type="file" id="logo-upload" accept="image/png, image/jpeg" style="display:none;">
+                <label for="logo-upload" class="upload-label"><span class="upload-icon">↑</span>Upload Logo</label>
+                <p>PNG, JPG up to 5MB</p>
+                <img id="logo-preview" src="${
+                  companyData.general.logo
+                    ? "data:image/png;base64," + companyData.general.logo
+                    : ""
+                }" style="${companyData.general.logo ? "" : "display:none;"}">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="address">Address</label>
+            <input type="text" id="address" value="${
+              companyData.address.address || ""
+            }" placeholder="Enter company address">
+          </div>
+          <div class="form-group">
+            <label for="country">Country</label>
+            <input type="text" id="country" value="${
+              companyData.address.countryRegionCode || ""
+            }" placeholder="Enter country">
+          </div>
+
+          <div class="form-group">
+            <label for="financial-year">Financial Year End</label>
+            <input type="text" id="financial-year" placeholder="dd-mm-yyyy">
+          </div>
+
+          <button type="button" class="btn save-btn" onclick="saveCompanyInformation()">Save Company Information</button>
+        </form>
+      </div>
+
+      <div class="tab-content-company" id="department-tab"><p>Department List content coming soon.</p></div>
+      <div class="tab-content-company" id="employee-tab"><p>Employee content coming soon.</p></div>
+      <div class="tab-content-company" id="subscription-tab"><p>Subscription Category content coming soon.</p></div>
+      <div class="tab-content-company" id="user-tab"><p>User Management content coming soon.</p></div>
+    </div>
+  `;
+
+  const fileInput = document.getElementById("logo-upload");
+  const preview = document.getElementById("logo-preview");
+  fileInput.addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        preview.src = event.target.result;
+        preview.style.display = "block";
+        logoBase64 = event.target.result.split(",")[1];
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  const container = mainContent.querySelector(".company-container");
+  if (container) {
+    container.style.opacity = "0";
+    container.style.transform = "translateY(20px)";
+    container.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+    setTimeout(() => {
+      container.style.opacity = "1";
+      container.style.transform = "translateY(0)";
+    }, 50);
+  }
+}
+
+function switchCompanyTab(tabName) {
+  const tabButtons = document.querySelectorAll(".tab-button-company");
+  tabButtons.forEach((button) => {
+    button.classList.remove("active");
+    if (button.textContent.toLowerCase().includes(tabName))
+      button.classList.add("active");
+  });
+
+  const tabContents = document.querySelectorAll(".tab-content-company");
+  tabContents.forEach((c) => c.classList.remove("active"));
+
+  const activeTab = document.getElementById(tabName + "-tab");
+  if (activeTab) activeTab.classList.add("active");
+}
+
+function saveCompanyInformation() {
+  const companyData = {
+    general: {
+      name: document.getElementById("company-name").value,
+      logoBase64: logoBase64,
+    },
+    address: {
+      address: document.getElementById("address").value,
+      countryRegionCode: document.getElementById("country").value,
+    },
+  };
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("updateCompanyInformation", [
+    companyData,
+  ]);
+}
+
+function OpenInitialSetupPage() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    "Initial Setup",
+  ]);
+}
+
+/* -------------------- Initial Setup ------------------- */
+function displayInitialSetup(setupData) {
+  const mainContent = document.querySelector(".main-content");
+  mainContent.innerHTML = `
+    <div class="company-container">
+      <h1 class="company-title">Initial Setup</h1>
+      <p class="company-subtitle">Configure number series, subscriptions, currencies, and more.</p>
+
+      <div class="tab-header">
+        <button class="tab-button-company active" onclick="switchInitialSetupTab('number-series')"><span class="tab-icon">🔢</span> Number Series</button>
+        <button class="tab-button-company" onclick="switchInitialSetupTab('subscription')"><span class="tab-icon">📦</span> Subscription</button>
+        <button class="tab-button-company" onclick="switchInitialSetupTab('currency')"><span class="tab-icon">💰</span> Currency</button>
+        <button class="tab-button-company" onclick="switchInitialSetupTab('payment-methods')"><span class="tab-icon">💳</span> Payment Methods</button>
+        <button class="tab-button-company" onclick="switchInitialSetupTab('compliance')"><span class="tab-icon">✅</span> Compliance</button>
+        <button class="tab-button-company" onclick="switchInitialSetupTab('reminder-policy')"><span class="tab-icon">🔔</span> Reminder Policy</button>
+      </div>
+
+      <div class="tab-content-company active" id="number-series-tab">
+        <h3 class="section-title">Number Series</h3>
+        <p class="section-subtitle">Configure number series for subscriptions and compliance</p>
+        <form id="number-series-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="subscription-nos">Subscription Nos.</label>
+              <input type="text" id="subscription-nos" value="${
+                setupData.setup.subscriptionNos || ""
+              }" placeholder="Enter subscription number series">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="compliance-nos">Compliance Nos.</label>
+              <input type="text" id="compliance-nos" value="${
+                setupData.setup.complianceNos || ""
+              }" placeholder="Enter compliance number series">
+            </div>
+          </div>
+          <div class="form-row">
+            <button type="button" class="btn" onclick="autoCreateAllNumberSeries()">Auto Create Number Series</button>
+            <button type="button" class="btn" onclick="openInitialSetupManually()">Update / Create Number Series Manually</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="tab-content-company" id="subscription-tab">
+        <p>Subscription configuration coming soon.</p>
+      </div>
+
+      <div class="tab-content-company" id="currency-tab">
+        <p>Currency configuration coming soon.</p>
+      </div>
+
+      <!-- ******** Payment Methods TAB (with button + list + modal) ******** -->
+      <div class="tab-content-company" id="payment-methods-tab">
+        <h3 class="section-title">Payment Methods</h3>
+        <p class="section-subtitle">Create and manage supported payment methods.</p>
+
+        <div class="form-row">
+          <button type="button" class="btn" onclick="openPaymentMethodModal()">Add Methods</button>
+          <button type="button" class="btn" onclick="openPaymentMethodsPage()">Open Payment Methods Page</button>
+        </div>
+
+        <div id="payment-methods-list" class="payment-list"></div>
+
+        <div id="pm-modal" class="modal-overlay">
+          <div class="modal">
+            <div class="modal-header">
+              <div class="modal-title">Create new method</div>
+              <button class="modal-close" onclick="closePaymentMethodModal()">×</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="pm-title">Title (*)</label>
+                <input type="text" id="pm-title" placeholder="Title">
+              </div>
+              <div class="form-group">
+                <label for="pm-type">Type (*)</label>
+                <select id="pm-type">
+                  <option value="">Select type</option>
+                  <option value="type1">Type 1</option>
+                  <option value="type2">Type 2</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="pm-desc">Description</label>
+                <input type="text" id="pm-desc" placeholder="Description">
+              </div>
+              <div class="form-group">
+                <label>Card Image</label>
+                <div class="icon-grid" id="pm-icon-grid"></div>
+              </div>
+              <div class="modal-row">
+                <div class="form-group">
+                  <label for="pm-managedby">Managed by</label>
+                  <input type="text" id="pm-managedby" placeholder="Manager name">
+                </div>
+                <div class="form-group">
+                  <label for="pm-expires">Expires at</label>
+                  <input type="text" id="pm-expires" placeholder="dd-mm-yyyy">
+                </div>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn" onclick="closePaymentMethodModal()">Cancel</button>
+              <button class="btn" onclick="createPaymentMethodFromModal()">Create</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ******** End Payment Methods TAB ******** -->
+
+      <div class="tab-content-company" id="compliance-tab"><p>Compliance configuration coming soon.</p></div>
+      <div class="tab-content-company" id="reminder-policy-tab"><p>Reminder Policy configuration coming soon.</p></div>
+    </div>
+  `;
+
+  const container = mainContent.querySelector(".company-container");
+  if (container) {
+    container.style.opacity = "0";
+    container.style.transform = "translateY(20px)";
+    container.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+    setTimeout(() => {
+      container.style.opacity = "1";
+      container.style.transform = "translateY(0)";
+    }, 50);
+  }
+  // Make sure icon grid is built if user opens modal
+}
+
+function switchInitialSetupTab(tabName) {
+  const tabButtons = document.querySelectorAll(".tab-button-company");
+  tabButtons.forEach((button) => {
+    button.classList.remove("active");
+    if (button.textContent.toLowerCase().includes(tabName.replace("-", " ")))
+      button.classList.add("active");
+  });
+  const tabContents = document.querySelectorAll(".tab-content-company");
+  tabContents.forEach((content) => content.classList.remove("active"));
+  const activeTab = document.getElementById(`${tabName}-tab`);
+  if (activeTab) activeTab.classList.add("active");
+
+  // Refresh list when Payment Methods is selected
+  if (tabName === "payment-methods") {
+    loadPaymentMethods();
+  }
+}
+
+function autoCreateAllNumberSeries() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    "Auto Create All Number Series",
+  ]);
+}
+function openInitialSetupManually() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    "Open Initial Setup",
+  ]);
+}
+
+/* --------- NEW: Payment Methods helpers (JS<->AL) -------- */
+// let pmSelectedIcon = "visa";
+// const pmIcons = [
+//   { key: "visa", label: "VISA" },
+//   { key: "mastercard", label: "MC" },
+//   { key: "paypal", label: "PayPal" },
+//   { key: "amex", label: "Amex" },
+//   { key: "applepay", label: "Apple" },
+//   { key: "googlepay", label: "GPay" },
+//   { key: "user", label: "👤" },
+//   { key: "megaphone", label: "📣" },
+//   { key: "lock", label: "🔒" },
+// ];
+
+// function buildIconGrid() {
+//   const grid = document.getElementById("pm-icon-grid");
+//   if (!grid) return;
+//   grid.innerHTML = pmIcons
+//     .map(
+//       (i) =>
+//         `<div class="icon-pill ${
+//           i.key === pmSelectedIcon ? "active" : ""
+//         }" data-icon="${i.key}" title="${i.key}">${i.label}</div>`
+//     )
+//     .join("");
+//   grid.querySelectorAll(".icon-pill").forEach((el) => {
+//     el.addEventListener("click", () => {
+//       pmSelectedIcon = el.getAttribute("data-icon");
+//       grid
+//         .querySelectorAll(".icon-pill")
+//         .forEach((x) => x.classList.remove("active"));
+//       el.classList.add("active");
+//     });
+//   });
+// }
+
+let pmSelectedIcon = "visa";
+const pmIcons = [
+  { key: "visa", label: "" },
+  { key: "mastercard", label: "" },
+  { key: "paypal", label: "" },
+  { key: "amex", label: "" },
+  { key: "applepay", label: "" },
+  { key: "googlepay", label: "" },
+  { key: "bank", label: "" },
+  { key: "cash", label: "" },
+  { key: "other", label: "" },
+];
+
+function buildIconGrid() {
+  const grid = document.getElementById("pm-icon-grid");
+  if (!grid) return;
+  grid.innerHTML = pmIcons
+    .map(
+      (i) =>
+        `<div class="icon-pill ${
+          i.key === pmSelectedIcon ? "active" : ""
+        }" data-icon="${i.key}" title="${i.key}">${i.label}</div>`
+    )
+    .join("");
+  grid.querySelectorAll(".icon-pill").forEach((el) => {
+    el.addEventListener("click", () => {
+      pmSelectedIcon = el.getAttribute("data-icon");
+      grid
+        .querySelectorAll(".icon-pill")
+        .forEach((x) => x.classList.remove("active"));
+      el.classList.add("active");
+    });
+  });
+}
+function openPaymentMethodModal() {
+  const modal = document.getElementById("pm-modal");
+  if (!modal) return;
+  document.getElementById("pm-title").value = "";
+  document.getElementById("pm-type").value = "";
+  document.getElementById("pm-desc").value = "";
+  document.getElementById("pm-managedby").value = "";
+  document.getElementById("pm-expires").value = "";
+  pmSelectedIcon = "visa";
+  buildIconGrid();
+  modal.style.display = "flex";
+}
+function closePaymentMethodModal() {
+  const m = document.getElementById("pm-modal");
+  if (m) m.style.display = "none";
+}
+
+function createPaymentMethodFromModal() {
+  const title = document.getElementById("pm-title").value.trim();
+  const type = document.getElementById("pm-type").value.trim();
+  if (!title || !type) {
+    alert("Please provide both Title and Type.");
+    return;
+  }
+  const payload = {
+    title,
+    type,
+    description: document.getElementById("pm-desc").value.trim(),
+    icon: pmSelectedIcon,
+    managedBy: document.getElementById("pm-managedby").value.trim(),
+    expiresAt: document.getElementById("pm-expires").value.trim(),
+  };
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("savePaymentMethod", [
+    payload,
+  ]);
+  closePaymentMethodModal();
+}
+
+function openPaymentMethodsPage() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+    "OnNavigationClick",
+    ["Manage Payment Methods"],
+    false,
+    function () {
+      loadPaymentMethods();
+    }
+  );
+}
+
+function loadPaymentMethods() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getPaymentMethods", []);
+}
+
+// Called from AL
+function renderPaymentMethods(methods /* JsonArray from AL */) {
+  // If AL passed a JSON array object, convert to list of JS objects
+  const arr = Array.isArray(methods) ? methods : methods?.value || [];
+  const list = document.getElementById("payment-methods-list");
+  if (!list) return;
+  list.innerHTML = arr.map(createPaymentCardHTML).join("");
+  animateCards();
+}
+
+// ... (existing code remains unchanged until payment card rendering)
+
+// In createPaymentCardHTML, add onclick for editing
+function createPaymentMethodFromModal() {
+  const title = document.getElementById("pm-title").value.trim();
+  const type = document.getElementById("pm-type").value.trim();
+  if (!title || !type) {
+    alert("Please provide both Title and Type.");
+    return;
+  }
+  const payload = {
+    title,
+    type,
+    description: document.getElementById("pm-desc").value.trim(),
+    icon: pmSelectedIcon,
+    managedBy: document.getElementById("pm-managedby").value.trim(),
+    expiresAt: document.getElementById("pm-expires").value.trim(),
+  };
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+    "savePaymentMethod",
+    [payload],
+    false,
+    function () {
+      loadPaymentMethods();
+      closePaymentMethodModal();
+    }
+  );
+}
+
+// New function to handle card click
+function editPaymentMethod(id) {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+    "OnNavigationClick",
+    ["EditPaymentMethod:" + id],
+    false,
+    function () {
+      loadPaymentMethods();
+    }
+  );
+}
+
+// ... (rest of the code unchanged)
+function displayIconLabel(key) {
+  const f = pmIcons.find((i) => i.key === key);
+  return f ? f.label : "💳";
+}
+function escapeHtml(s) {
+  return (s || "").replace(
+    /[&<>"']/g,
+    (m) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
+        m
+      ])
+  );
+}
+
+dashboard page code:
+page 70100 "SubsTracker Dashboard"
+{
+    PageType = Card;
+    ApplicationArea = All;
+    UsageCategory = Administration;
+    Caption = 'SubsTracker Dashboard';
+
+    layout
+    {
+        area(Content)
+        {
+            usercontrol(Dashboard; SubsTrackerDashboard)
+            {
+                ApplicationArea = All;
+
+                // Existing triggers
+                trigger OnNavigationClick(PageName: Text)
+                begin
+                    HandleNavigation(PageName);
+                end;
+
+                trigger updateCompanyInformation(CompanyData: JsonObject)
+                begin
+                    UpdateCompanyInformation(CompanyData);
+                end;
+
+                trigger updateInitialSetup(SetupData: JsonObject)
+                begin
+                    UpdateInitialSetup(SetupData);
+                end;
+
+                // NEW: JS -> AL
+                trigger savePaymentMethod(MethodData: JsonObject)
+                begin
+                    SavePaymentMethod(MethodData);
+                end;
+
+                trigger getPaymentMethods()
+                begin
+                    SendPaymentMethods();
+                end;
+            }
+        }
+    }
+
+    actions { }
+
+    // -------------------------- Navigation --------------------------
+    local procedure HandleNavigation(PageName: Text)
+    var
+        ComplianceRec: Record "Compliance Overview";
+        PM: Record "ST Payment Method";
+        EntryNo: Integer;
+    begin
+        case true of
+            // Sidebar
+            PageName = 'Dashboard':
+                OpenDashboardPage();
+            PageName = 'Initial Setup':
+                LoadInitialSetup();
+            PageName = 'Subscription':
+                OpenSubscriptionPage();
+            PageName = 'Compliance':
+                OpenCompliancePage();
+            PageName = 'Notification':
+                OpenNotificationPage();
+            PageName = 'Company Information':
+                LoadCompanyInformation();
+
+            // Notifications
+            PageName = 'Subscription Notifications':
+                PAGE.Run(50139);
+            PageName = 'Compliance Notifications':
+                PAGE.Run(70131);
+
+            // Subscription buttons
+            PageName = 'Add Subscription':
+                PAGE.Run(PAGE::"Add Subscription");
+            PageName = 'Manage Subscriptions':
+                PAGE.Run(PAGE::"Manage Subscriptions");
+            PageName = 'Active Subscriptions':
+                PAGE.Run(PAGE::"Active Subscriptions");
+            PageName = 'Inactive Subscriptions':
+                PAGE.Run(PAGE::"Inactive Subscriptions");
+            PageName = 'Renewals This Month':
+                PAGE.Run(PAGE::"Renewals This Month");
+
+            // Compliance buttons
+            PageName = 'Setup New Compliance Item':
+                PAGE.RunModal(PAGE::"Compliance Type Selector");
+            PageName = 'Submit a Compliance':
+                PAGE.Run(PAGE::"Compliance List");
+            PageName = 'View Submitted Compliance':
+                PAGE.Run(PAGE::"Compliance Archive List");
+            PageName = 'Pending Compliance Submissions':
+                PAGE.Run(PAGE::"Pending Compliance List");
+            PageName = 'This Month’s Submissions':
+                PAGE.Run(PAGE::"Due This Month Compliance List");
+
+            PageName = 'Auto Create All Number Series':
+                AutoCreateAllNumberSeries();
+            PageName = 'Open Initial Setup':
+                PAGE.Run(PAGE::"Initial Setup");
+
+            // NEW: open Payment Methods list page
+            PageName = 'Manage Payment Methods':
+                begin
+                    PAGE.Run(PAGE::"ST Payment Methods");
+                    SendPaymentMethods(); // Send updated list after page closes
+                end;
+            PageName.StartsWith('EditPaymentMethod:'):
+                begin
+                    Evaluate(EntryNo, CopyStr(PageName, 19)); // Extract ID after 'EditPaymentMethod:'
+                    if PM.Get(EntryNo) then begin
+                        PAGE.Run(PAGE::"ST Payment Method Card", PM);
+                        SendPaymentMethods(); // Send updated list after page closes
+                    end else
+                        Error('Payment method with Entry No. %1 not found.', EntryNo);
+                end;
+            else
+                Message('Unknown navigation: %1', PageName);
+        end;
+
+        CurrPage.Dashboard.setActiveNavigation(PageName);
+    end;
+
+    local procedure OpenDashboardPage()
+    begin
+        PAGE.Run(PAGE::"Compliance Chart");
+    end;
+
+    local procedure OpenInitialSetupPage()
+    begin
+        // JS handles
+    end;
+
+    local procedure OpenSubscriptionPage()
+    begin
+    end;
+
+    local procedure OpenCompliancePage()
+    begin
+    end;
+
+    local procedure OpenNotificationPage()
+    begin
+    end;
+
+    // -------------------------- Company Info --------------------------
+    local procedure LoadCompanyInformation()
+    var
+        CompanyInfo: Record "Company Information";
+        CompanyData: JsonObject;
+        JGeneral: JsonObject;
+        JAddress: JsonObject;
+        JContacts: JsonObject;
+        JRegistration: JsonObject;
+        JBanking: JsonObject;
+        JShipping: JsonObject;
+        TempBlob: Codeunit "Temp Blob";
+        Base64Convert: Codeunit "Base64 Convert";
+        InStr: InStream;
+        Base64Str: Text;
+    begin
+        CompanyInfo.Get();
+
+        // General
+        JGeneral.Add('name', CompanyInfo.Name);
+        JGeneral.Add('name2', CompanyInfo."Name 2");
+        JGeneral.Add('industrialClassification', CompanyInfo."Industrial Classification");
+        JGeneral.Add('customSystemIndicatorText', CompanyInfo."Custom System Indicator Text");
+        JGeneral.Add('responsibilityCenter', CompanyInfo."Responsibility Center");
+        JGeneral.Add('baseCalendarCode', CompanyInfo."Base Calendar Code");
+
+        if CompanyInfo.Picture.HasValue then begin
+            CompanyInfo.CalcFields(Picture);
+            CompanyInfo.Picture.CreateInStream(InStr);
+            Base64Str := Base64Convert.ToBase64(InStr);
+            JGeneral.Add('logo', Base64Str);
+        end;
+
+        // Address
+        JAddress.Add('address', CompanyInfo.Address);
+        JAddress.Add('address2', CompanyInfo."Address 2");
+        JAddress.Add('city', CompanyInfo.City);
+        JAddress.Add('postCode', CompanyInfo."Post Code");
+        JAddress.Add('county', CompanyInfo.County);
+        JAddress.Add('countryRegionCode', CompanyInfo."Country/Region Code");
+
+        // Contacts
+        JContacts.Add('phoneNo', CompanyInfo."Phone No.");
+        JContacts.Add('phoneNo2', CompanyInfo."Phone No. 2");
+        JContacts.Add('faxNo', CompanyInfo."Fax No.");
+        JContacts.Add('eMail', CompanyInfo."E-Mail");
+        JContacts.Add('homePage', CompanyInfo."Home Page");
+        JContacts.Add('contactPerson', CompanyInfo."Contact Person");
+
+        // Registration
+        JRegistration.Add('vatRegistrationNo', CompanyInfo."VAT Registration No.");
+        JRegistration.Add('registrationNo', CompanyInfo."Registration No.");
+        JRegistration.Add('customsPermitNo', CompanyInfo."Customs Permit No.");
+        JRegistration.Add('customsPermitDate', Format(CompanyInfo."Customs Permit Date"));
+        JRegistration.Add('eoriNumber', CompanyInfo."EORI Number");
+        JRegistration.Add('gln', CompanyInfo.GLN);
+
+        // Banking
+        JBanking.Add('giroNo', CompanyInfo."Giro No.");
+        JBanking.Add('bankName', CompanyInfo."Bank Name");
+        JBanking.Add('bankBranchNo', CompanyInfo."Bank Branch No.");
+        JBanking.Add('bankAccountNo', CompanyInfo."Bank Account No.");
+        JBanking.Add('paymentRoutingNo', CompanyInfo."Payment Routing No.");
+        JBanking.Add('iban', CompanyInfo.IBAN);
+        JBanking.Add('swiftCode', CompanyInfo."SWIFT Code");
+
+        // Shipping
+        JShipping.Add('shipToName', CompanyInfo."Ship-to Name");
+        JShipping.Add('shipToName2', CompanyInfo."Ship-to Name 2");
+        JShipping.Add('shipToAddress', CompanyInfo."Ship-to Address");
+        JShipping.Add('shipToAddress2', CompanyInfo."Ship-to Address 2");
+        JShipping.Add('shipToCity', CompanyInfo."Ship-to City");
+        JShipping.Add('shipToPostCode', CompanyInfo."Ship-to Post Code");
+        JShipping.Add('shipToCounty', CompanyInfo."Ship-to County");
+        JShipping.Add('shipToCountryRegionCode', CompanyInfo."Ship-to Country/Region Code");
+        JShipping.Add('shipToContact', CompanyInfo."Ship-to Contact");
+        JShipping.Add('shipToPhoneNo', CompanyInfo."Ship-to Phone No.");
+        JShipping.Add('locationCode', CompanyInfo."Location Code");
+
+        // Bundle
+        CompanyData.Add('general', JGeneral);
+        CompanyData.Add('address', JAddress);
+        CompanyData.Add('contacts', JContacts);
+        CompanyData.Add('registration', JRegistration);
+        CompanyData.Add('banking', JBanking);
+        CompanyData.Add('shipping', JShipping);
+
+        CurrPage.Dashboard.displayCompanyInformation(CompanyData);
+    end;
+
+    local procedure UpdateCompanyInformation(CompanyData: JsonObject)
+    var
+        CompanyInfo: Record "Company Information";
+        JGeneral: JsonObject;
+        JAddress: JsonObject;
+        TempBlob: Codeunit "Temp Blob";
+        Base64Convert: Codeunit "Base64 Convert";
+        OutStr: OutStream;
+        InStr: InStream;
+        LogoBase64: Text;
+        JToken: JsonToken;
+    begin
+        CompanyInfo.Get();
+
+        if CompanyData.Get('general', JToken) then begin
+            JGeneral := JToken.AsObject();
+            if JGeneral.Get('name', JToken) then
+                CompanyInfo.Name := JToken.AsValue().AsText();
+
+            if JGeneral.Get('logoBase64', JToken) then begin
+                LogoBase64 := JToken.AsValue().AsText();
+                if LogoBase64 <> '' then begin
+                    TempBlob.CreateOutStream(OutStr);
+                    Base64Convert.FromBase64(LogoBase64, OutStr);
+                    TempBlob.CreateInStream(InStr);
+                    CompanyInfo.Picture.CreateOutStream(OutStr);
+                    CopyStream(OutStr, InStr);
+                end;
+            end;
+        end;
+
+        if CompanyData.Get('address', JToken) then begin
+            JAddress := JToken.AsObject();
+            if JAddress.Get('address', JToken) then
+                CompanyInfo.Address := JToken.AsValue().AsText();
+            if JAddress.Get('countryRegionCode', JToken) then
+                CompanyInfo."Country/Region Code" := JToken.AsValue().AsText();
+        end;
+
+        CompanyInfo.Modify(true);
+    end;
+
+    // ------------------------ Initial Setup -------------------------
+    local procedure LoadInitialSetup()
+    var
+        InitialSetup: Record "Initial Setup";
+        SetupData: JsonObject;
+        JSetup: JsonObject;
+    begin
+        if not InitialSetup.Get() then begin
+            InitialSetup.Init();
+            InitialSetup."Primary Key" := '';
+            InitialSetup.Insert(true);
+        end;
+
+        JSetup.Add('subscriptionNos', InitialSetup."Subscription Nos.");
+        JSetup.Add('complianceNos', InitialSetup."Compliance Nos.");
+        SetupData.Add('setup', JSetup);
+
+        CurrPage.Dashboard.displayInitialSetup(SetupData);
+    end;
+
+    local procedure UpdateInitialSetup(SetupData: JsonObject)
+    var
+        InitialSetup: Record "Initial Setup";
+        JSetup: JsonObject;
+        JToken: JsonToken;
+    begin
+        InitialSetup.Get();
+
+        if SetupData.Get('setup', JToken) then begin
+            JSetup := JToken.AsObject();
+            if JSetup.Get('subscriptionNos', JToken) then
+                InitialSetup."Subscription Nos." := JToken.AsValue().AsCode();
+            if JSetup.Get('complianceNos', JToken) then
+                InitialSetup."Compliance Nos." := JToken.AsValue().AsCode();
+        end;
+
+        InitialSetup.Modify(true);
+    end;
+
+    local procedure AutoCreateAllNumberSeries()
+    var
+        InitialSetup: Record "Initial Setup";
+    begin
+        InitialSetup.Get();
+        InitialSetup.CreateDefaultSubscriptionNumberSeries();
+        InitialSetup.CreateDefaultComplianceNumberSeries();
+        LoadInitialSetup();
+    end;
+
+    // -------------------- NEW: Payment Methods ----------------------
+    local procedure SavePaymentMethod(MethodData: JsonObject)
+    var
+        PM: Record "ST Payment Method";
+        Tok: JsonToken;
+        Txt: Text;
+        D: Date;
+    begin
+        PM.Init();
+
+        if MethodData.Get('title', Tok) then
+            PM."Title" := Tok.AsValue().AsText();
+
+        if MethodData.Get('type', Tok) then begin
+            case LowerCase(Tok.AsValue().AsText()) of
+                'type1':
+                    PM.Type := PM.Type::type1;
+                'type2':
+                    PM.Type := PM.Type::type2;
+
+                else
+                    Error('Unknown payment method type: %1', Tok.AsValue().AsText());
+            end;
+        end;
+
+
+        if MethodData.Get('description', Tok) then
+            PM."Description" := Tok.AsValue().AsText();
+
+        if MethodData.Get('icon', Tok) then
+            PM."Icon" := Tok.AsValue().AsText();
+
+        if MethodData.Get('managedBy', Tok) then
+            PM."Managed By" := Tok.AsValue().AsText();
+
+        if MethodData.Get('expiresAt', Tok) then begin
+            Txt := Tok.AsValue().AsText();
+            if Txt <> '' then
+                Evaluate(D, Txt);
+            PM."Expires At" := D;
+        end;
+
+        PM.Insert(true);
+        SendPaymentMethods(); // return refreshed list to JS
+    end;
+
+    local procedure SendPaymentMethods()
+    var
+        PM: Record "ST Payment Method";
+        Arr: JsonArray;
+        Obj: JsonObject;
+    begin
+        if PM.FindSet() then
+            repeat
+                Clear(Obj);
+                Obj.Add('id', PM."Entry No.");
+                Obj.Add('title', PM."Title");
+                Obj.Add('type', PM."Type");
+                Obj.Add('description', PM."Description");
+                Obj.Add('icon', PM."Icon");
+                Obj.Add('managedBy', PM."Managed By");
+                if PM."Expires At" <> 0D then
+                    Obj.Add('expiresAt', Format(PM."Expires At"))
+                else
+                    Obj.Add('expiresAt', '');
+                Arr.Add(Obj);
+            until PM.Next() = 0;
+
+        CurrPage.Dashboard.renderPaymentMethods(Arr);
+    end;
+}
