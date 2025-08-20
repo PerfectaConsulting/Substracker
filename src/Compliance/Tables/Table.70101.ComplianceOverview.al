@@ -50,6 +50,12 @@ table 70101 "Compliance Overview"
             DataClassification = SystemMetadata;
             Caption = 'Compliance ID';
         }
+        field(20; "Custom 1"; Text[250]) { DataClassification = CustomerContent; }
+        field(21; "Custom 2"; Text[250]) { DataClassification = CustomerContent; }
+        field(22; "Custom 3"; Text[250]) { DataClassification = CustomerContent; }
+        field(23; "Custom 4"; Text[250]) { DataClassification = CustomerContent; }
+        field(24; "Custom5"; Text[250]) { DataClassification = CustomerContent; }
+        
     }
     keys
     {
