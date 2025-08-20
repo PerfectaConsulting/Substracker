@@ -45,6 +45,16 @@ begin
     SendDepartments();
 end;
 
+trigger getEmployees()
+begin
+    SendEmployees();
+end;
+trigger getSubscriptionCategories()
+begin
+    SendSubscriptionCategories();
+end;
+
+
 
                 trigger getSubscriptionStats()
 begin
@@ -130,6 +140,36 @@ begin
     PAGE.Run(PAGE::"Department Master Card");
     SendDepartments(); // refresh list after closing the card
 end;
+
+ PageName = 'AddEmployee':
+            begin
+                PAGE.Run(PAGE::"Employee Ext Card");  // <-- opens page 50121
+                SendEmployees();                      // refresh the list after close
+                 
+            end;
+
+PageName.StartsWith('EditEmployee:'):
+begin
+    HandleEditEmployee(PageName);
+end;
+
+
+PageName.StartsWith('EditDepartment:'):
+begin
+    HandleEditDepartment(PageName);
+end;
+
+PageName = 'Add Subscription Categories':
+begin
+    PAGE.Run(PAGE::"Subscription Categories"); // page 50123
+    SendSubscriptionCategories();              // refresh list after close
+end;
+
+PageName.StartsWith('EditSubscriptionCategory:'):
+begin
+    HandleEditSubscriptionCategory(PageName);
+end;
+
 PageName = 'LoadDepartments':
     SendDepartments();
 
@@ -156,6 +196,92 @@ PageName = 'LoadDepartments':
 
         CurrPage.Dashboard.setActiveNavigation(PageName);
     end;
+
+var
+    Emp: Record "Employee Ext";
+    EmpNoTxt: Text;
+
+    local procedure HandleEditSubscriptionCategory(PageName: Text)
+var
+    Cat: Record "Subscription Category";
+    CatCode: Code[20]; // adjust if your Code length differs
+begin
+    // Extract after 'EditSubscriptionCategory:'
+    CatCode := CopyStr(PageName, StrLen('EditSubscriptionCategory:') + 1);
+
+    if Cat.Get(CatCode) then begin
+        PAGE.Run(PAGE::"Subscription Categories", Cat); // page 50123
+        SendSubscriptionCategories();
+    end else
+        Message('Subscription Category %1 not found.', CatCode);
+end;
+
+local procedure SendSubscriptionCategories()
+var
+    Cat: Record "Subscription Category"; // table 50124
+    Arr: JsonArray;
+    Obj: JsonObject;
+begin
+    Cat.Reset();
+    if Cat.FindSet() then
+        repeat
+            Clear(Obj);
+            Obj.Add('code', Cat.Code);
+            // 👇 Adjust the field if your display name differs (e.g., Cat.Name or Cat.Description)
+            Obj.Add('name', Cat.Description);
+            Arr.Add(Obj);
+        until Cat.Next() = 0;
+
+    CurrPage.Dashboard.renderSubscriptionCategories(Arr);
+end;
+
+local procedure HandleEditDepartment(PageName: Text)
+var
+    Dept: Record "Department Master";
+    DeptCode: Code[20]; // adjust length if your "Code" differs
+begin
+    // Extract text after 'EditDepartment:'
+    DeptCode := CopyStr(PageName, StrLen('EditDepartment:') + 1);
+
+    if Dept.Get(DeptCode) then begin
+        PAGE.Run(PAGE::"Department Master Card", Dept); // page 50116
+        SendDepartments(); // refresh list after closing
+    end else
+        Message('Department %1 not found.', DeptCode);
+end;
+
+local procedure HandleEditEmployee(PageName: Text)
+var
+    Emp: Record "Employee Ext";
+    EmpNoTxt: Text;
+begin
+    // Text after 'EditEmployee:'
+    EmpNoTxt := CopyStr(PageName, StrLen('EditEmployee:') + 1);
+    if Emp.Get(EmpNoTxt) then begin
+        PAGE.Run(PAGE::"Employee Ext Card", Emp);
+        SendEmployees();
+    end else
+        Message('Employee %1 not found.', EmpNoTxt);
+end;
+
+local procedure SendEmployees()
+var
+    Emp: Record "Employee Ext";
+    Arr: JsonArray;
+    Obj: JsonObject;
+begin
+    Emp.Reset();
+    if Emp.FindSet() then
+        repeat
+            Clear(Obj);
+            // 🔧 Adjust the two lines below if your table uses different field names
+            Obj.Add('no', Emp."No.");
+            Obj.Add('name', Emp."Full Name"); // use "Full Name" if that's your field
+            Arr.Add(Obj);
+        until Emp.Next() = 0;
+
+    CurrPage.Dashboard.renderEmployees(Arr);
+end;
 
     local procedure OpenDashboardPage()
     begin
@@ -597,8 +723,6 @@ begin
     CurrPage.Dashboard.renderSubscriptionStatistics(Stats);
 end;
 
-
-
 local procedure SendDepartments()
 var
     Dept: Record "Department Master";
@@ -610,7 +734,7 @@ begin
         repeat
             Clear(Obj);
             // Adjust if your fields differ
-            Obj.Add('code', Dept.Code); 
+            Obj.Add('code', Dept.Code);
             Obj.Add('name', Dept."Head of Department Name");
             Arr.Add(Obj);
         until Dept.Next() = 0;

@@ -36,5 +36,12 @@ procedure renderSubscriptionStatistics(Stats: JsonObject);
 event getDepartments();
 procedure renderDepartments(Departments: JsonArray);
 
+// Add to interface for JS <-> AL bridge
+event getEmployees();
+procedure renderEmployees(Employees: JsonArray);
+
+
+ event getSubscriptionCategories();
+  procedure renderSubscriptionCategories(Categories: JsonArray);
 
 }
