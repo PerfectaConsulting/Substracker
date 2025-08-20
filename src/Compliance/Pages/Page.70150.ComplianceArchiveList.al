@@ -16,6 +16,7 @@ page 70150 "Compliance Archive List"
             {
                 field("Compliance Name"; Rec."Compliance Name") { }
                 field("Compliance Category"; Rec."Compliance Category") { }
+                field("Paid Amount"; Rec."Payable Amount") { }
                 field("Filing Starting Date"; Rec."Filing Starting Date") { }
                 field("Filing End Date"; Rec."Filing End Date") { }
                 field("Filing Due Date"; Rec."Filing Due Date") { }

@@ -233,6 +233,28 @@ page 50100 "Initial Setup"
                     ToolTip = 'Specify the number series for subscription entries.';
                 }
             }
+            group(Employee)
+{
+    Caption = 'Employee';
+    field(EmployeeNos; EmployeeNosCode)
+    {
+        ApplicationArea = All;
+        Caption = 'Employee Nos.';
+        ToolTip = 'Specify the number series for employee entries.';
+        TableRelation = "No. Series".Code;
+
+        trigger OnValidate()
+        begin
+            if not EmpSetup.FindFirst() then begin
+                EmpSetup.Init();
+                EmpSetup.Insert(true);
+            end;
+            EmpSetup."Employee Ext Nos." := EmployeeNosCode;
+            EmpSetup.Modify(true);  // auto-save immediately
+        end;
+    }
+}
+
         }
     }
     actions
@@ -284,4 +306,21 @@ page 50100 "Initial Setup"
             Rec.Insert();
         end;
     end;
+
+
+trigger OnAfterGetCurrRecord()
+begin
+    if not EmpSetup.FindFirst() then begin
+        EmpSetup.Init();
+        EmpSetup.Insert(true);
+    end;
+    EmployeeNosCode := EmpSetup."Employee Ext Nos.";
+end;
+
+    var
+    EmployeeNosCode: Code[20];
+    EmpSetup: Record "Employee Ext Setup";
+
+
+
 }

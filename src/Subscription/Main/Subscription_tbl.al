@@ -11,13 +11,20 @@ table 50110 "Subscription"
             DataClassification = CustomerContent;
 
             trigger OnValidate()
-            begin
-                if "No." <> xRec."No." then begin
-                    SubscriptionSetup.GetRecordOnce();
-                    NoSeries.TestManual(SubscriptionSetup."Subscription Nos.");
-                    "No. Series" := '';
-                end;
-            end;
+    var
+        InitialSetup: Record "Initial Setup";
+        NoSeriesMgt: Codeunit "No. Series";
+    begin
+        if "No." <> xRec."No." then begin
+            // If user types a manual number, verify the selected series allows manual nos.
+            InitialSetup.Get();
+            if InitialSetup."Subscription Nos." <> '' then
+                NoSeriesMgt.TestManual(InitialSetup."Subscription Nos.");
+
+            // Reset link so InitSeries/SelectSeries will relink correctly
+            "No. Series" := '';
+        end;
+    end;
         }
 
         field(2; "No. Series"; Code[20])
@@ -276,28 +283,40 @@ table 50110 "Subscription"
         SubscriptionSetup: Record "Subscription Setup";
         NoSeries: Codeunit "No. Series";
 
-    trigger OnInsert()
-    begin
-        if "No." = '' then begin
-            SubscriptionSetup.GetRecordOnce();
-            SubscriptionSetup.TestField("Subscription Nos.");
-            "No." := NoSeries.GetNextNo(SubscriptionSetup."Subscription Nos.");
-            "No. Series" := SubscriptionSetup."Subscription Nos.";
-        end;
+   trigger OnInsert()
+var
+    InitialSetup: Record "Initial Setup";
+    NoSeriesMgt: Codeunit "No. Series";
+begin
+    if "No." = '' then begin
+        InitialSetup.Get();
+        InitialSetup.TestField("Subscription Nos.");
 
-        "Created Date" := CurrentDateTime;
-        "Created By" := UserId;
-        "Last Modified Date" := CurrentDateTime;
-        "Last Modified By" := UserId;
+        // Get next number from the series chosen in Initial Setup
+        "No." := NoSeriesMgt.GetNextNo(
+            InitialSetup."Subscription Nos.",  // series
+            WorkDate(),                        // posting date
+            true);                             // increment
 
-        if Status = Status::" " then
-            Status := Status::Active;
-
-        // Calculate LCY amount on insert
-        CalculateAmountLCY();
-
-        CreateLedgerEntry("Subscription Change Type"::Creation, 0D, 0D);
+        // Link the record to that series
+        "No. Series" := InitialSetup."Subscription Nos.";
     end;
+
+    "Created Date" := CurrentDateTime;
+    "Created By" := UserId;
+    "Last Modified Date" := CurrentDateTime;
+    "Last Modified By" := UserId;
+
+    if Status = Status::" " then
+        Status := Status::Active;
+
+    // Calculate LCY amount on insert
+    CalculateAmountLCY();
+
+    CreateLedgerEntry("Subscription Change Type"::Creation, 0D, 0D);
+end;
+
+
 
     trigger OnModify()
     begin

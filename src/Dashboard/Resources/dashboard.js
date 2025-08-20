@@ -1,9 +1,7 @@
 // ====== GLOBAL VARIABLES & CONSTANTS ======
-// Make InvokeExtensibilityMethod safe in browser preview
-Microsoft.Dynamics.NAV.InvokeExtensibilityMethod =
-  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod || function () {};
+let logoBase64 = "";
+let pmSelectedIcon = "visa";
 
-// Payment Method Icons Configuration
 const PM_ICONS = [
   { key: "visa", label: "" },
   { key: "mastercard", label: "" },
@@ -16,9 +14,9 @@ const PM_ICONS = [
   { key: "other", label: "" },
 ];
 
-// State
-let logoBase64 = "";
-let pmSelectedIcon = "visa";
+// Make InvokeExtensibilityMethod safe in browser preview
+Microsoft.Dynamics.NAV.InvokeExtensibilityMethod =
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod || function () {};
 
 // ====== INITIALIZATION ======
 document.addEventListener("DOMContentLoaded", function () {
@@ -72,20 +70,22 @@ function handleNavigationClick(e) {
   const pageName = this.textContent.trim();
   setActiveNavigation(pageName);
 
-  // Route to appropriate page handler
   switch (pageName) {
     case "Subscription":
       showSubscriptionButtons();
+      stopComplianceStatsTimer?.();
+      startSubscriptionStatsTimer();
       break;
+
     case "Compliance":
       showComplianceButtons();
+      stopSubscriptionStatsTimer?.();
+      startComplianceStatsTimer?.();
       break;
-    case "Notification":
-      showNotificationTabs();
-      break;
-    case "Company Information":
-    case "Initial Setup":
+
     default:
+      stopSubscriptionStatsTimer?.();
+      stopComplianceStatsTimer?.();
       Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
         pageName,
       ]);
@@ -101,10 +101,27 @@ function setActiveNavigation(pageName) {
   });
 }
 
-// ====== SUBSCRIPTION & COMPLIANCE CARDS ======
+// ====== SUBSCRIPTION FUNCTIONS ======
 function showSubscriptionButtons() {
   const mainContent = document.querySelector(".main-content");
   mainContent.innerHTML = `
+    <div id="subscription-stats-container">
+      <div class="stats-container">
+        <div class="stat-box purple">
+          <div class="stat-label">Total Subscriptions</div>
+          <div id="sub-total" class="stat-value">0</div>
+        </div>
+        <div class="stat-box green">
+          <div class="stat-label">Active</div>
+          <div id="sub-active" class="stat-value">0</div>
+        </div>
+        <div class="stat-box yellow">
+          <div class="stat-label">Inactive</div>
+          <div id="sub-inactive" class="stat-value">0</div>
+        </div>
+      </div>
+    </div>
+
     <div class="subscription-grid">
       ${createSubscriptionCard(
         "Add Subscription",
@@ -136,9 +153,59 @@ function showSubscriptionButtons() {
   animateCards();
 }
 
+function renderSubscriptionStatistics(stats) {
+  const s = stats || {};
+  const elT = document.getElementById("sub-total");
+  const elA = document.getElementById("sub-active");
+  const elI = document.getElementById("sub-inactive");
+  const elR = document.getElementById("sub-renewals"); // optional if you added 4th box
+
+  if (elT) elT.textContent = s.total ?? 0;
+  if (elA) elA.textContent = s.active ?? 0;
+  if (elI) elI.textContent = s.inactive ?? 0;
+  if (elR) elR.textContent = s.renewals ?? 0;
+}
+
+let subscriptionStatsTimer = null;
+
+function requestSubscriptionStats() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getSubscriptionStats", []);
+}
+
+function startSubscriptionStatsTimer() {
+  if (subscriptionStatsTimer) clearInterval(subscriptionStatsTimer);
+  requestSubscriptionStats(); // immediate
+  subscriptionStatsTimer = setInterval(requestSubscriptionStats, 5000); // 5s
+}
+
+function stopSubscriptionStatsTimer() {
+  if (subscriptionStatsTimer) {
+    clearInterval(subscriptionStatsTimer);
+    subscriptionStatsTimer = null;
+  }
+}
+
+// ====== COMPLIANCE FUNCTIONS ======
 function showComplianceButtons() {
   const mainContent = document.querySelector(".main-content");
   mainContent.innerHTML = `
+    <div id="compliance-stats-container">
+      <div class="stats-container">
+        <div class="stat-box purple">
+          <div class="stat-label">Total (This Year)</div>
+          <div id="stat-total" class="stat-value">0</div>
+        </div>
+        <div class="stat-box green">
+          <div class="stat-label">Active</div>
+          <div id="stat-active" class="stat-value">0</div>
+        </div>
+        <div class="stat-box yellow">
+          <div class="stat-label">Pending</div>
+          <div id="stat-pending" class="stat-value">0</div>
+        </div>
+      </div>
+    </div>
+
     <div class="subscription-grid">
       ${createSubscriptionCard(
         "Setup New Compliance Item",
@@ -170,6 +237,70 @@ function showComplianceButtons() {
   animateCards();
 }
 
+function renderComplianceStatistics(stats) {
+  const totalEl = document.getElementById("stat-total");
+  const activeEl = document.getElementById("stat-active");
+  const pendingEl = document.getElementById("stat-pending");
+
+  // If elements exist, update values without re-rendering (no flicker)
+  if (totalEl && activeEl && pendingEl) {
+    const s = stats || {};
+    totalEl.textContent = s.total ?? 0;
+    activeEl.textContent = s.active ?? 0;
+    pendingEl.textContent = s.pending ?? 0;
+    return;
+  }
+
+  // Fallback (first render only): build the boxes if they weren't present
+  const container = document.getElementById("compliance-stats-container");
+  if (container) {
+    container.innerHTML = `
+      <div class="stats-container">
+        <div class="stat-box purple">
+          <div class="stat-label">Total (This Year)</div>
+          <div id="stat-total" class="stat-value">${
+            (stats && stats.total) ?? 0
+          }</div>
+        </div>
+        <div class="stat-box green">
+          <div class="stat-label">Active</div>
+          <div id="stat-active" class="stat-value">${
+            (stats && stats.active) ?? 0
+          }</div>
+        </div>
+        <div class="stat-box yellow">
+          <div class="stat-label">Pending</div>
+          <div id="stat-pending" class="stat-value">${
+            (stats && stats.pending) ?? 0
+          }</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+let complianceStatsTimer = null;
+
+function requestComplianceStats() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    "Compliance",
+  ]);
+}
+
+function startComplianceStatsTimer() {
+  if (complianceStatsTimer) clearInterval(complianceStatsTimer);
+  requestComplianceStats(); // refresh immediately
+  complianceStatsTimer = setInterval(requestComplianceStats, 5000); // every 5s
+}
+
+function stopComplianceStatsTimer() {
+  if (complianceStatsTimer) {
+    clearInterval(complianceStatsTimer);
+    complianceStatsTimer = null;
+  }
+}
+
+// ====== SUBSCRIPTION & COMPLIANCE CARDS COMMON FUNCTIONS ======
 function createSubscriptionCard(title, description, icon) {
   return `
     <div class="subscription-card" onclick="navigateTo('${title.replace(
@@ -202,6 +333,19 @@ function navigateTo(label) {
   Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
     label,
   ]);
+}
+
+function animateStats() {
+  const boxes = document.querySelectorAll(".stat-box");
+  boxes.forEach((box, idx) => {
+    box.style.opacity = "0";
+    box.style.transform = "translateY(20px)";
+    box.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+    setTimeout(() => {
+      box.style.opacity = "1";
+      box.style.transform = "translateY(0)";
+    }, idx * 150);
+  });
 }
 
 // ====== NOTIFICATION TABS ======
@@ -334,7 +478,12 @@ function displayCompanyInformation(companyData) {
           <button type="button" class="btn save-btn" onclick="saveCompanyInformation()">Save Company Information</button>
         </form>
       </div>
-      <div class="tab-content-company" id="department-tab"><p>Department List content coming soon.</p></div>
+     <div class="tab-content-company" id="department-tab">
+  <div class="form-row" style="margin-bottom:12px;">
+    <button type="button" class="btn" onclick="openAddDepartmentPage()">Add Department</button>
+  </div>
+  <div id="department-list" class="payment-list"></div>
+</div>
       <div class="tab-content-company" id="employee-tab"><p>Employee content coming soon.</p></div>
       <div class="tab-content-company" id="subscription-tab"><p>Subscription Category content coming soon.</p></div>
       <div class="tab-content-company" id="user-tab"><p>User Management content coming soon.</p></div>
@@ -378,6 +527,11 @@ function switchCompanyTab(tabName) {
   tabContents.forEach((c) => c.classList.remove("active"));
   const activeTab = document.getElementById(`${tabName}-tab`);
   if (activeTab) activeTab.classList.add("active");
+
+  // NEW: fetch departments when opening Department tab
+  if (tabName === "department") {
+    loadDepartments();
+  }
 }
 
 function saveCompanyInformation() {
@@ -397,37 +551,37 @@ function saveCompanyInformation() {
   ]);
 }
 
-function OpenInitialSetupPage() {
-  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-    "Initial Setup",
-  ]);
-}
-
 // ====== INITIAL SETUP ======
 function displayInitialSetup(setupData) {
   const mainContent = document.querySelector(".main-content");
   mainContent.innerHTML = `
     <div class="company-container">
       <h1 class="company-title">Initial Setup</h1>
-      <p class="company-subtitle">Configure number series, subscriptions, currencies, and more.</p>
+      <p class="company-subtitle">Configure number series, payment methods, and reminders.</p>
+
       <div class="tab-header">
-        <button class="tab-button-company active" onclick="switchInitialSetupTab('number-series')"><span class="tab-icon">🔢</span> Number Series</button>
-        <button class="tab-button-company" onclick="switchInitialSetupTab('subscription')"><span class="tab-icon">📦</span> Subscription</button>
-        <button class="tab-button-company" onclick="switchInitialSetupTab('currency')"><span class="tab-icon">💰</span> Currency</button>
-        <button class="tab-button-company" onclick="switchInitialSetupTab('payment-methods')"><span class="tab-icon">💳</span> Payment Methods</button>
-        <button class="tab-button-company" onclick="switchInitialSetupTab('compliance')"><span class="tab-icon">✅</span> Compliance</button>
-        <button class="tab-button-company" onclick="switchInitialSetupTab('reminder-policy')"><span class="tab-icon">🔔</span> Reminder Policy</button>
+        <button class="tab-button-company active" onclick="switchInitialSetupTab('number-series')">
+          <span class="tab-icon">🔢</span> Number Series
+        </button>
+        <button class="tab-button-company" onclick="switchInitialSetupTab('payment-methods')">
+          <span class="tab-icon">💳</span> Payment Methods
+        </button>
+        <button class="tab-button-company" onclick="switchInitialSetupTab('reminder-policy')">
+          <span class="tab-icon">🔔</span> Reminder Policy
+        </button>
       </div>
+
+      <!-- Number Series -->
       <div class="tab-content-company active" id="number-series-tab">
         <h3 class="section-title">Number Series</h3>
-        <p class="section-subtitle">Configure number series for subscriptions and compliance</p>
+        <p class="section-subtitle">Configure number series for subscriptions and compliance.</p>
         <form id="number-series-form">
           <div class="form-row">
             <div class="form-group">
               <label for="subscription-nos">Subscription Nos.</label>
               <input type="text" id="subscription-nos" value="${
                 setupData.setup.subscriptionNos || ""
-              }" placeholder="Enter subscription number series">
+              }" disabled>
             </div>
           </div>
           <div class="form-row">
@@ -435,22 +589,28 @@ function displayInitialSetup(setupData) {
               <label for="compliance-nos">Compliance Nos.</label>
               <input type="text" id="compliance-nos" value="${
                 setupData.setup.complianceNos || ""
-              }" placeholder="Enter compliance number series">
+              }" disabled>
             </div>
           </div>
+
+          <!-- NEW: read-only mirror of Employee series -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="employee-ext-nos">Employee Nos. (managed via “Assign Manually”)</label>
+              <input type="text" id="employee-ext-nos" value="${
+                setupData.setup.employeeExtNos || ""
+              }" disabled>
+            </div>
+          </div>
+
           <div class="form-row">
             <button type="button" class="btn" onclick="autoCreateAllNumberSeries()">Auto Create Number Series</button>
-            <button type="button" class="btn" onclick="openInitialSetupManually()">Update / Create Number Series Manually</button>
+            <button type="button" class="btn" onclick="openInitialSetupManually()">Assign Manually</button>
           </div>
         </form>
       </div>
-      <div class="tab-content-company" id="subscription-tab">
-        <p>Subscription configuration coming soon.</p>
-      </div>
-      <div class="tab-content-company" id="currency-tab">
-        <p>Currency configuration coming soon.</p>
-      </div>
-      <!-- Payment Methods TAB -->
+
+      <!-- Payment Methods -->
       <div class="tab-content-company" id="payment-methods-tab">
         <h3 class="section-title">Payment Methods</h3>
         <p class="section-subtitle">Create and manage supported payment methods.</p>
@@ -459,59 +619,36 @@ function displayInitialSetup(setupData) {
           <button type="button" class="btn" onclick="openPaymentMethodsPage()">Open Payment Methods Page</button>
         </div>
         <div id="payment-methods-list" class="payment-list"></div>
-        <div id="pm-modal" class="modal-overlay">
-          <div class="modal">
-            <div class="modal-header">
-              <div class="modal-title">Create new method</div>
-              <button class="modal-close" onclick="closePaymentMethodModal()">×</button>
-            </div>
-            <div class="modal-body">
-              <div class="form-group">
-                <label for="pm-title">Title (*)</label>
-                <input type="text" id="pm-title" placeholder="Title">
-              </div>
-              <div class="form-group">
-                <label for="pm-type">Type (*)</label>
-                <select id="pm-type">
-                  <option value="">Select type</option>
-                  <option value="type1">Type 1</option>
-                  <option value="type2">Type 2</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="pm-desc">Description</label>
-                <input type="text" id="pm-desc" placeholder="Description">
-              </div>
-              <div class="form-group">
-                <label>Card Image</label>
-                <div class="icon-grid" id="pm-icon-grid"></div>
-              </div>
-              <div class="modal-row">
-                <div class="form-group">
-                  <label for="pm-managedby">Managed by</label>
-                  <input type="text" id="pm-managedby" placeholder="Manager name">
-                </div>
-                <div class="form-group">
-                  <label for="pm-expires">Expires at</label>
-                  <input type="text" id="pm-expires" placeholder="dd-mm-yyyy">
-                </div>
-              </div>
-            </div>
-            <div class="modal-actions">
-              <button class="btn" onclick="closePaymentMethodModal()">Cancel</button>
-              <button class="btn" onclick="createPaymentMethodFromModal()">Create</button>
-            </div>
-          </div>
-        </div>
+        <!-- modal stays as-is -->
       </div>
-      <!-- End Payment Methods TAB -->
-      <div class="tab-content-company" id="compliance-tab"><p>Compliance configuration coming soon.</p></div>
-      <div class="tab-content-company" id="reminder-policy-tab"><p>Reminder Policy configuration coming soon.</p></div>
+
+      <!-- Reminder Policy -->
+      <div class="tab-content-company" id="reminder-policy-tab">
+        <p>Reminder Policy configuration coming soon.</p>
+      </div>
     </div>
   `;
 
-  // Animate container
   animateContainer(mainContent.querySelector(".company-container"));
+}
+
+function saveInitialSetup() {
+  const payload = {
+    setup: {
+      subscriptionNos: document.getElementById("subscription-nos").value.trim(),
+      complianceNos: document.getElementById("compliance-nos").value.trim(),
+      employeeExtNos: document.getElementById("employee-ext-nos").value.trim(),
+    },
+  };
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("updateInitialSetup", [
+    payload,
+  ]);
+}
+
+function openEmployeeExtSetup() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    "Open Employee Ext Setup",
+  ]);
 }
 
 function switchInitialSetupTab(tabName) {
@@ -540,8 +677,22 @@ function autoCreateAllNumberSeries() {
 }
 
 function openInitialSetupManually() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+    "OnNavigationClick",
+    ["Assign Manually"],
+    false,
+    function () {
+      // after the card closes, reload the data so UI shows new series immediately
+      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+        "Initial Setup",
+      ]);
+    }
+  );
+}
+
+function OpenInitialSetupPage() {
   Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-    "Open Initial Setup",
+    "Initial Setup",
   ]);
 }
 
@@ -552,8 +703,8 @@ function buildIconGrid() {
 
   grid.innerHTML = PM_ICONS.map(
     (i) => `
-      <div class="icon-pill ${i.key === pmSelectedIcon ? "active" : ""}" 
-           data-icon="${i.key}" 
+      <div class="icon-pill ${i.key === pmSelectedIcon ? "active" : ""}"
+           data-icon="${i.key}"
            title="${i.key}">${i.label}</div>
     `
   ).join("");
@@ -706,4 +857,55 @@ function escapeHtml(s) {
         m
       ])
   );
+}
+
+// optional: pause when tab hidden, resume when visible on Compliance
+document.addEventListener("visibilitychange", () => {
+  const onCompliance =
+    document.querySelector(".nav-link.active")?.textContent.trim() ===
+    "Compliance";
+  if (document.hidden) stopComplianceStatsTimer();
+  else if (onCompliance) startComplianceStatsTimer();
+});
+
+window.addEventListener("beforeunload", stopComplianceStatsTimer);
+
+function openAddDepartmentPage() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+    "OnNavigationClick",
+    ["Add Department"],
+    false,
+    function () {
+      // refresh list after user closes the card
+      loadDepartments();
+    }
+  );
+}
+
+function loadDepartments() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getDepartments", []);
+}
+
+// Called from AL
+function renderDepartments(departments) {
+  const arr = Array.isArray(departments)
+    ? departments
+    : departments?.value || [];
+  const list = document.getElementById("department-list");
+  if (!list) return;
+
+  if (arr.length === 0) {
+    list.innerHTML = `<div style="opacity:.8;">No departments found.</div>`;
+    return;
+  }
+
+  list.innerHTML = arr
+    .map(
+      (d) => `
+      <div class="payment-card">
+        <div class="title">${escapeHtml(d.name || "")}</div>
+        <div class="meta">${escapeHtml(d.code || "")}</div>
+      </div>`
+    )
+    .join("");
 }

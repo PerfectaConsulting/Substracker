@@ -10,20 +10,31 @@ controladdin SubsTrackerDashboard
     Scripts = '../Dashboard/Resources/dashboard.js';
     StyleSheets = '../Dashboard/Resources/Dashboard.css';
 
-    // Existing events
     event OnNavigationClick(PageName: Text);
     event updateCompanyInformation(CompanyData: JsonObject);
     event updateInitialSetup(SetupData: JsonObject);
 
-    // New events for Payment Methods
     event savePaymentMethod(PaymentMethodData: JsonObject);
     event getPaymentMethods();
 
-    // Existing procedures
     procedure setActiveNavigation(PageName: Text);
     procedure displayCompanyInformation(CompanyData: JsonObject);
     procedure displayInitialSetup(SetupData: JsonObject);
-
-    // New procedure for Payment Methods
     procedure renderPaymentMethods(PaymentMethods: JsonArray);
+
+    // NEW
+    procedure renderComplianceStatistics(Stats: JsonObject);
+
+
+    // Ask AL for subscription stats
+event getSubscriptionStats();
+
+// AL -> JS: render subscription stats
+procedure renderSubscriptionStatistics(Stats: JsonObject);
+
+// Ask AL to send departments
+event getDepartments();
+procedure renderDepartments(Departments: JsonArray);
+
+
 }

@@ -39,6 +39,18 @@ page 70100 "SubsTracker Dashboard"
                 begin
                     SendPaymentMethods();
                 end;
+
+                trigger getDepartments()
+begin
+    SendDepartments();
+end;
+
+
+                trigger getSubscriptionStats()
+begin
+    SendSubscriptionStatistics();
+end;
+
             }
         }
     }
@@ -61,7 +73,10 @@ page 70100 "SubsTracker Dashboard"
             PageName = 'Subscription':
                 OpenSubscriptionPage();
             PageName = 'Compliance':
-                OpenCompliancePage();
+                begin
+                    OpenCompliancePage();
+                    SendComplianceStatistics(); // NEW: send stats to JS when Compliance is selected
+                end;
             PageName = 'Notification':
                 OpenNotificationPage();
             PageName = 'Company Information':
@@ -96,11 +111,29 @@ page 70100 "SubsTracker Dashboard"
                 PAGE.Run(PAGE::"Pending Compliance List");
             PageName = 'This Month’s Submissions':
                 PAGE.Run(PAGE::"Due This Month Compliance List");
+                PageName = 'Open Employee Ext Setup':
+    PAGE.Run(PAGE::"Employee Ext Setup");
+
 
             PageName = 'Auto Create All Number Series':
                 AutoCreateAllNumberSeries();
-            PageName = 'Open Initial Setup':
-                PAGE.Run(PAGE::"Initial Setup");
+            // PageName = 'Open Initial Setup':
+            //     PAGE.Run(PAGE::"Initial Setup");
+            // Rename route to "Assign Manually" but still accept the old label for safety
+PageName in ['Assign Manually', 'Open Initial Setup']:
+begin
+    PAGE.Run(PAGE::"Initial Setup");  // user edits series manually
+    LoadInitialSetup();               // <— refresh JS after page closes
+end;
+PageName = 'Add Department':
+begin
+    PAGE.Run(PAGE::"Department Master Card");
+    SendDepartments(); // refresh list after closing the card
+end;
+PageName = 'LoadDepartments':
+    SendDepartments();
+
+
 
             // NEW: open Payment Methods list page
             PageName = 'Manage Payment Methods':
@@ -145,6 +178,10 @@ page 70100 "SubsTracker Dashboard"
     local procedure OpenNotificationPage()
     begin
     end;
+trigger OnAfterGetCurrRecord()
+begin
+    SendComplianceStatistics();
+end;
 
     // -------------------------- Company Info --------------------------
     local procedure LoadCompanyInformation()
@@ -192,7 +229,7 @@ page 70100 "SubsTracker Dashboard"
         JContacts.Add('phoneNo2', CompanyInfo."Phone No. 2");
         JContacts.Add('faxNo', CompanyInfo."Fax No.");
         JContacts.Add('eMail', CompanyInfo."E-Mail");
-        JContacts.Add('homePage', CompanyInfo."Home Page");
+       // JContacts.Add('homePage', CompanyInfo."Home Page");
         JContacts.Add('contactPerson', CompanyInfo."Contact Person");
 
         // Registration
@@ -280,52 +317,164 @@ page 70100 "SubsTracker Dashboard"
 
     // ------------------------ Initial Setup -------------------------
     local procedure LoadInitialSetup()
-    var
-        InitialSetup: Record "Initial Setup";
-        SetupData: JsonObject;
-        JSetup: JsonObject;
-    begin
-        if not InitialSetup.Get() then begin
-            InitialSetup.Init();
-            InitialSetup."Primary Key" := '';
-            InitialSetup.Insert(true);
-        end;
-
-        JSetup.Add('subscriptionNos', InitialSetup."Subscription Nos.");
-        JSetup.Add('complianceNos', InitialSetup."Compliance Nos.");
-        SetupData.Add('setup', JSetup);
-
-        CurrPage.Dashboard.displayInitialSetup(SetupData);
+var
+    InitialSetup: Record "Initial Setup";
+    EmpSetup: Record "Employee Ext Setup";
+    SetupData: JsonObject;
+    JSetup: JsonObject;
+begin
+    if not InitialSetup.Get() then begin
+        InitialSetup.Init();
+        InitialSetup."Primary Key" := '';
+        InitialSetup.Insert(true);
     end;
+
+    // Ensure Employee Ext Setup record exists
+    if not EmpSetup.FindFirst() then begin
+        EmpSetup.Init();
+        EmpSetup.Insert(true);
+    end;
+
+    JSetup.Add('subscriptionNos', InitialSetup."Subscription Nos.");
+    JSetup.Add('complianceNos', InitialSetup."Compliance Nos.");
+    JSetup.Add('employeeExtNos', EmpSetup."Employee Ext Nos."); // NEW
+
+    SetupData.Add('setup', JSetup);
+
+    CurrPage.Dashboard.displayInitialSetup(SetupData);
+end;
+
 
     local procedure UpdateInitialSetup(SetupData: JsonObject)
-    var
-        InitialSetup: Record "Initial Setup";
-        JSetup: JsonObject;
-        JToken: JsonToken;
-    begin
-        InitialSetup.Get();
+var
+    InitialSetup: Record "Initial Setup";
+    EmpSetup: Record "Employee Ext Setup";
+    JSetup: JsonObject;
+    JToken: JsonToken;
+begin
+    InitialSetup.Get();
 
-        if SetupData.Get('setup', JToken) then begin
-            JSetup := JToken.AsObject();
-            if JSetup.Get('subscriptionNos', JToken) then
-                InitialSetup."Subscription Nos." := JToken.AsValue().AsCode();
-            if JSetup.Get('complianceNos', JToken) then
-                InitialSetup."Compliance Nos." := JToken.AsValue().AsCode();
-        end;
-
-        InitialSetup.Modify(true);
+    // Ensure Employee Ext Setup record exists
+    if not EmpSetup.FindFirst() then begin
+        EmpSetup.Init();
+        EmpSetup.Insert(true);
     end;
+
+    if SetupData.Get('setup', JToken) then begin
+        JSetup := JToken.AsObject();
+
+        if JSetup.Get('subscriptionNos', JToken) then
+            InitialSetup."Subscription Nos." := JToken.AsValue().AsCode();
+
+        if JSetup.Get('complianceNos', JToken) then
+            InitialSetup."Compliance Nos." := JToken.AsValue().AsCode();
+
+        // NEW: Employee
+        if JSetup.Get('employeeExtNos', JToken) then begin
+            EmpSetup."Employee Ext Nos." := JToken.AsValue().AsCode();
+            EmpSetup.Modify(true);
+        end;
+    end;
+
+    InitialSetup.Modify(true);
+end;
+
 
     local procedure AutoCreateAllNumberSeries()
-    var
-        InitialSetup: Record "Initial Setup";
-    begin
-        InitialSetup.Get();
-        InitialSetup.CreateDefaultSubscriptionNumberSeries();
-        InitialSetup.CreateDefaultComplianceNumberSeries();
-        LoadInitialSetup();
+var
+    InitialSetup: Record "Initial Setup";
+    EmpSetup: Record "Employee Ext Setup";
+begin
+    InitialSetup.Get();
+    InitialSetup.CreateDefaultSubscriptionNumberSeries();
+    InitialSetup.CreateDefaultComplianceNumberSeries();
+
+    // Ensure EmpSetup record exists
+    if not EmpSetup.FindFirst() then begin
+        EmpSetup.Init();
+        EmpSetup.Insert(true);
     end;
+
+    // Create/assign default EMP number series if missing
+    CreateDefaultEmployeeNoSeries(EmpSetup);
+
+    // Re-send values to JS
+    LoadInitialSetup();
+end;
+
+// Creates series EMP (EMP00001..EMP99999) if it doesn't exist and assigns it
+local procedure CreateDefaultEmployeeNoSeries(var EmpSetup: Record "Employee Ext Setup")
+var
+    NoSeries: Record "No. Series";
+    NoSeriesLine: Record "No. Series Line";
+    SeriesCode: Code[20];
+begin
+    SeriesCode := 'EMP';
+
+    if not NoSeries.Get(SeriesCode) then begin
+        NoSeries.Init();
+        NoSeries.Code := SeriesCode;
+        NoSeries.Description := 'Employee Numbers';
+        NoSeries.Insert(true);
+
+        NoSeriesLine.Init();
+        NoSeriesLine."Series Code" := SeriesCode;
+        NoSeriesLine."Line No." := 10000;
+        NoSeriesLine."Starting No." := 'EMP00001';
+        NoSeriesLine."Ending No." := 'EMP99999';
+        NoSeriesLine."Increment-by No." := 1;
+        NoSeriesLine.Insert(true);
+    end;
+
+    EmpSetup."Employee Ext Nos." := SeriesCode;
+    EmpSetup.Modify(true);
+end;
+
+
+    // -------------------- NEW: Compliance Statistics ----------------------
+local procedure SendComplianceStatistics()
+var
+    ComplianceRec: Record "Compliance Overview";
+    ArchiveRec: Record "Compliance Overview Archive";
+    Stats: JsonObject;
+
+    PendingCount: Integer;
+    ActiveCount: Integer;
+
+    PayableSumCY: Decimal;
+    FromDate: Date;
+    ToDate: Date;
+    CurrentYear: Integer;
+begin
+    // Pending = all records in Compliance Overview (unchanged)
+    ComplianceRec.Reset();
+    PendingCount := ComplianceRec.Count;
+
+    // Active = all records in Archive
+    ArchiveRec.Reset();
+    ActiveCount := ArchiveRec.Count;
+
+    // Sum of Payable Amount for CURRENT YEAR based on "File Submitted" (Archive)
+    CurrentYear := Date2DMY(Today(), 3);
+    FromDate := DMY2DATE(1, 1, CurrentYear);
+    ToDate := DMY2DATE(31, 12, CurrentYear);
+
+    ArchiveRec.Reset();
+    ArchiveRec.SetRange("File Submitted", FromDate, ToDate);
+
+    PayableSumCY := 0;
+    if ArchiveRec.FindSet() then
+        repeat
+            PayableSumCY += ArchiveRec."Payable Amount";
+        until ArchiveRec.Next() = 0;
+
+    // Send to JS: use 'total' for the first tile
+    Stats.Add('total', PayableSumCY);
+    Stats.Add('active', ActiveCount);
+    Stats.Add('pending', PendingCount);
+
+    CurrPage.Dashboard.renderComplianceStatistics(Stats);
+end;
 
     // -------------------- NEW: Payment Methods ----------------------
     local procedure SavePaymentMethod(MethodData: JsonObject)
@@ -346,12 +495,10 @@ page 70100 "SubsTracker Dashboard"
                     PM.Type := PM.Type::type1;
                 'type2':
                     PM.Type := PM.Type::type2;
-
                 else
                     Error('Unknown payment method type: %1', Tok.AsValue().AsText());
             end;
         end;
-
 
         if MethodData.Get('description', Tok) then
             PM."Description" := Tok.AsValue().AsText();
@@ -397,4 +544,82 @@ page 70100 "SubsTracker Dashboard"
 
         CurrPage.Dashboard.renderPaymentMethods(Arr);
     end;
+
+
+    local procedure SendSubscriptionStatistics()
+var
+    // TODO: Replace with YOUR actual subscription table and fields
+    // Example assumptions below:
+    //   - Table: "ST Subscription"
+    //   - Fields: Status (Option: Active/Inactive), "Renewal Date" (Date)
+    Sub: Record "Subscription";
+    Stats: JsonObject;
+
+    TotalSubs: Integer;
+    ActiveSubs: Integer;
+    InactiveSubs: Integer;
+    RenewalsThisMonth: Integer;
+
+    FirstDay: Date;
+    LastDay: Date;
+begin
+    // ---- Total
+    Sub.Reset();
+    TotalSubs := Sub.Count;
+
+    // ---- Active
+    Sub.Reset();
+     
+    Sub.SetRange(Status, Sub.Status::Active);
+    ActiveSubs := Sub.Count;
+
+    // ---- Inactive
+    Sub.Reset();
+    // inactive
+    Sub.SetRange(Status, Sub.Status::Inactive);
+    InactiveSubs := Sub.Count;
+
+    // ---- Renewals this month (optional fourth box, if you want it)
+    // Compute first/last day of current month
+    FirstDay := DMY2DATE(1, Date2DMY(Today(), 2), Date2DMY(Today(), 3));
+    LastDay := CalcDate('<CM>', FirstDay) - 1;
+    Sub.Reset();
+   
+    Sub.SetRange("End Date", FirstDay, LastDay);
+    RenewalsThisMonth := Sub.Count;
+
+    // Send to JS (keys are up to you; these are used below in JS)
+    Stats.Add('total', TotalSubs);
+    Stats.Add('active', ActiveSubs);
+    Stats.Add('inactive', InactiveSubs);
+    Stats.Add('renewals', RenewalsThisMonth);
+
+    CurrPage.Dashboard.renderSubscriptionStatistics(Stats);
+end;
+
+
+
+local procedure SendDepartments()
+var
+    Dept: Record "Department Master";
+    Arr: JsonArray;
+    Obj: JsonObject;
+begin
+    Dept.Reset();
+    if Dept.FindSet() then
+        repeat
+            Clear(Obj);
+            // Adjust if your fields differ
+            Obj.Add('code', Dept.Code); 
+            Obj.Add('name', Dept."Head of Department Name");
+            Arr.Add(Obj);
+        until Dept.Next() = 0;
+
+    CurrPage.Dashboard.renderDepartments(Arr);
+end;
+
+
+
 }
+
+
