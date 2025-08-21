@@ -26,8 +26,11 @@ table 70150 "ST Payment Method"
 
     keys
     {
-        key(PK; "Entry No.") { Clustered = true; }
+        key(PK; "Entry No.","Description") { Clustered = true; } 
+        
     }
+         
+    
 }
 
 page 70158 "ST Payment Methods"

@@ -108,6 +108,30 @@ page 70103 "Compliance Card"
             Rec.Modify(true);
         end;
     end;
+trigger OnQueryClosePage(CloseAction: Action): Boolean
+var
+    UserChoice: Boolean;
+begin
+    if (Rec."Filing Starting Date" = 0D) or
+       (Rec."Filing End Date" = 0D) or
+       (Rec."Filing Due Date" = 0D) then begin
+
+        UserChoice := Dialog.Confirm(
+          'The filing dates are mandatory. If you close this page without completing them, ' +
+          'the record will be deleted. How do you wish to proceed?',
+          true,   // true = default is Yes
+          'Delete', 
+          'Cancel');
+
+        if UserChoice then begin
+            Rec.Delete(true); // Delete record
+            exit(true);       // Allow page close
+        end else
+            exit(false);      // Cancel close
+    end;
+
+    exit(true); // Allow normal close if valid
+end;
 
     local procedure UpdateDueDate()
     begin

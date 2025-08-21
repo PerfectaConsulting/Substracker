@@ -34,6 +34,11 @@ page 70100 "SubsTracker Dashboard"
                 begin
                     SavePaymentMethod(MethodData);
                 end;
+                trigger getComplianceStats(FromDateTxt: Text; ToDateTxt: Text)
+begin
+    SendComplianceStatisticsWithRange(FromDateTxt, ToDateTxt);
+end;
+
 
                 trigger getPaymentMethods()
                 begin
@@ -123,7 +128,10 @@ end;
                 PAGE.Run(PAGE::"Due This Month Compliance List");
                 PageName = 'Open Employee Ext Setup':
     PAGE.Run(PAGE::"Employee Ext Setup");
-
+PageName = 'Open Subscription Chart':
+    PAGE.Run(70157); // Subscription Chart
+PageName = 'Open Compliance Chart':
+    PAGE.Run(PAGE::"Compliance Chart"); // 70156
 
             PageName = 'Auto Create All Number Series':
                 AutoCreateAllNumberSeries();
@@ -152,6 +160,7 @@ PageName.StartsWith('EditEmployee:'):
 begin
     HandleEditEmployee(PageName);
 end;
+ 
 
 
 PageName.StartsWith('EditDepartment:'):
@@ -169,6 +178,8 @@ PageName.StartsWith('EditSubscriptionCategory:'):
 begin
     HandleEditSubscriptionCategory(PageName);
 end;
+
+ 
 
 PageName = 'LoadDepartments':
     SendDepartments();
@@ -200,6 +211,48 @@ PageName = 'LoadDepartments':
 var
     Emp: Record "Employee Ext";
     EmpNoTxt: Text;
+local procedure SendComplianceStatisticsWithRange(FromDateTxt: Text; ToDateTxt: Text)
+var
+    ComplianceRec: Record "Compliance Overview";
+    ArchiveRec: Record "Compliance Overview Archive";
+    Stats: JsonObject;
+    PendingCount: Integer;
+    ActiveCount: Integer;
+    PayableSum: Decimal;
+    FromDate: Date;
+    ToDate: Date;
+begin
+    // Parse dates coming from JS (yyyy-mm-dd)
+    Evaluate(FromDate, FromDateTxt);
+    Evaluate(ToDate,   ToDateTxt);
+
+    // Pending = all records in Compliance Overview (unchanged)
+    ComplianceRec.Reset();
+    PendingCount := ComplianceRec.Count;
+
+    // Active = all records in Archive (unchanged)
+    ArchiveRec.Reset();
+    ActiveCount := ArchiveRec.Count;
+
+    // Sum Payable Amount within selected range using "File Submitted"
+    ArchiveRec.Reset();
+    if (FromDate <> 0D) or (ToDate <> 0D) then
+        ArchiveRec.SetRange("File Submitted", FromDate, ToDate);
+
+    PayableSum := 0;
+    if ArchiveRec.FindSet() then
+        repeat
+            PayableSum += ArchiveRec."Payable Amount";
+        until ArchiveRec.Next() = 0;
+
+    // Send to JS (use 'yearly' key for clarity; also keep 'total' for backward compat)
+    Stats.Add('yearly', PayableSum);
+    Stats.Add('total',  PayableSum);
+    Stats.Add('active', ActiveCount);
+    Stats.Add('pending', PendingCount);
+
+    CurrPage.Dashboard.renderComplianceStatistics(Stats);
+end;
 
     local procedure HandleEditSubscriptionCategory(PageName: Text)
 var
@@ -284,9 +337,15 @@ begin
 end;
 
     local procedure OpenDashboardPage()
-    begin
-        PAGE.Run(PAGE::"Compliance Chart");
-    end;
+begin
+    // Render the new JS-based main dashboard
+    CurrPage.Dashboard.showMainDashboard();
+
+    // Optionally push initial data right away
+    SendSubscriptionStatistics();
+    SendComplianceStatistics();
+end;
+
 
     local procedure OpenInitialSetupPage()
     begin

@@ -223,7 +223,7 @@ table 50110 "Subscription"
         field(57; "Payment Method"; Code[20])
         {
             Caption = 'Payment Method';
-            TableRelation = "Custom Payment Method".Code;
+             TableRelation = "ST Payment Method"."Entry No.";
             DataClassification = CustomerContent;
         }
 
@@ -259,6 +259,7 @@ table 50110 "Subscription"
         key(SubscriptionID; "Subscription ID")
         {
         }
+        
         key(NextRenewalDate; "End Date")
         {
         }

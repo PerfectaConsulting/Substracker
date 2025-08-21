@@ -101,6 +101,223 @@ function setActiveNavigation(pageName) {
   });
 }
 
+// ====== MAIN DASHBOARD (Subscription / Compliance tabs) ======
+function showMainDashboard() {
+  const main = document.querySelector(".main-content");
+  if (!main) return;
+
+  main.innerHTML = `
+    <div class="company-container">
+      <h1 class="company-title">Dashboard</h1>
+      <p class="company-subtitle">At-a-glance analytics for Subscriptions and Compliance</p>
+
+      <!-- Top-level tabs -->
+      <div class="tab-header">
+        <button class="tab-button-company active" onclick="switchMainDashTab('subscription')"><span class="tab-icon">📦</span> Subscription</button>
+        <button class="tab-button-company" onclick="switchMainDashTab('compliance')"><span class="tab-icon">✅</span> Compliance</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="tab-content-company active" id="dash-filters">
+        <div class="form-row" style="margin-bottom:16px">
+          <div class="form-group">
+            <label for="dash-range">Time Range</label>
+            <select id="dash-range" onchange="applyDashboardFilters()">
+              <option value="3m">Last 3 months</option>
+              <option value="6m" selected>Last 6 months</option>
+              <option value="12m">Last 12 months</option>
+              <option value="ytd">Year-to-date</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dash-category">Category</label>
+            <select id="dash-category" onchange="applyDashboardFilters()">
+              <option value="">All Categories</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBSCRIPTION VIEW -->
+      <div id="dash-subscription">
+        <!-- KPI -->
+        <div class="stats-container">
+          <div class="stat-box purple">
+            <div class="stat-label">Monthly Spend</div>
+            <div id="sub-kpi-monthly" class="stat-value">—</div>
+          </div>
+          <div class="stat-box purple">
+            <div class="stat-label">Yearly Spend</div>
+            <div id="sub-kpi-yearly" class="stat-value">—</div>
+          </div>
+          <div class="stat-box green">
+            <div class="stat-label">Active Subscriptions</div>
+            <div id="sub-kpi-active" class="stat-value">0</div>
+          </div>
+          <div class="stat-box yellow">
+            <div class="stat-label">Upcoming Renewals</div>
+            <div id="sub-kpi-renewals" class="stat-value">0</div>
+          </div>
+        </div>
+
+        <!-- Charts (placeholders for now) -->
+        <div class="subscription-grid" style="margin-top:10px">
+          <div class="subscription-card">
+            <div class="icon-container">📈</div>
+            <div class="card-title">Spending Trends</div>
+            <div class="card-description">Monthly spend over the selected time range</div>
+          </div>
+          <div class="subscription-card">
+            <div class="icon-container">🧩</div>
+            <div class="card-title">Category Breakdown</div>
+            <div class="card-description">Split by subscription category</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPLIANCE VIEW -->
+      <div id="dash-compliance" style="display:none">
+        <!-- KPI -->
+        <div class="stats-container">
+  <!-- Yearly (range-based) Spend -->
+  <div class="stat-box purple">
+    <div class="stat-label">Yearly Spend</div>
+    <div id="stat-yearly" class="stat-value">0</div>
+  </div>
+
+  <!-- Active -->
+  <div class="stat-box green">
+    <div class="stat-label">Active</div>
+    <div id="stat-active" class="stat-value">0</div>
+  </div>
+
+  <!-- Pending -->
+  <div class="stat-box yellow">
+    <div class="stat-label">Pending</div>
+    <div id="stat-pending" class="stat-value">0</div>
+  </div>
+</div>
+
+
+        <!-- Charts (placeholders for now) -->
+  <div class="subscription-grid" style="margin-top:10px">
+  <div class="subscription-card full-span" onclick="openComplianceChart()">
+    <div class="icon-container">📈</div>
+    <div>
+      <div class="card-title">Spending Trends</div>
+      <div class="card-description">Monthly spend over the selected time range</div>
+    </div>
+  </div>
+</div>
+
+
+
+      </div>
+    </div>
+  `;
+
+  // Seed category filter (re-uses existing AL->JS list function)
+  loadSubscriptionCategoriesForFilter();
+
+  // Default tab: Subscription
+  switchMainDashTab("subscription");
+  animateContainer(main.querySelector(".company-container"));
+}
+
+// function switchMainDashTab(tab) {
+//   const sub = document.getElementById("dash-subscription");
+//   const comp = document.getElementById("dash-compliance");
+
+//   document
+//     .querySelectorAll(".tab-button-company")
+//     .forEach((b) => b.classList.remove("active"));
+
+//   if (tab === "subscription") {
+//     if (sub) sub.style.display = "";
+//     if (comp) comp.style.display = "none";
+//     document
+//       .querySelectorAll(".tab-button-company")[0]
+//       ?.classList.add("active");
+
+//     stopComplianceStatsTimer?.();
+//     startSubscriptionStatsTimer();
+//     requestSubscriptionStats();
+//   } else {
+//     if (sub) sub.style.display = "none";
+//     if (comp) comp.style.display = "";
+//     document
+//       .querySelectorAll(".tab-button-company")[1]
+//       ?.classList.add("active");
+
+//     stopSubscriptionStatsTimer?.();
+//     startComplianceStatsTimer?.();
+//     // Re-use your existing Compliance path
+//     Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+//       "Compliance",
+//     ]);
+//   }
+// }
+
+function switchMainDashTab(tab) {
+  const sub = document.getElementById("dash-subscription");
+  const comp = document.getElementById("dash-compliance");
+  const filters = document.getElementById("dash-filters");
+  const compStats = comp?.querySelector(".stats-container");
+  const isSub = tab === "subscription";
+
+  document
+    .querySelectorAll(".tab-button-company")
+    .forEach((b) => b.classList.remove("active"));
+
+  if (sub) sub.style.display = isSub ? "" : "none";
+  if (comp) comp.style.display = isSub ? "none" : "";
+  if (filters) filters.style.display = isSub ? "" : "none";
+
+  // space above KPIs when filters are hidden
+  if (compStats) compStats.style.marginTop = isSub ? "" : "16px";
+
+  document
+    .querySelectorAll(".tab-button-company")
+    [isSub ? 0 : 1]?.classList.add("active");
+
+  if (isSub) {
+    stopComplianceStatsTimer?.();
+    startSubscriptionStatsTimer();
+    requestSubscriptionStats();
+  } else {
+    stopSubscriptionStatsTimer?.();
+    startComplianceStatsTimer?.();
+    requestComplianceStats();
+    // Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    //   "Compliance",
+    // ]);
+  }
+}
+
+function applyDashboardFilters() {
+  const range = document.getElementById("dash-range")?.value || "6m";
+  const cat = document.getElementById("dash-category")?.value || "";
+  console.debug("Dashboard filters:", { range, category: cat });
+
+  const compVisible =
+    document.getElementById("dash-compliance")?.style.display !== "none";
+  if (compVisible) {
+    requestComplianceStats();
+    // Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    //   "Compliance",
+    // ]);
+  } else {
+    requestSubscriptionStats();
+  }
+}
+
+function loadSubscriptionCategoriesForFilter() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+    "getSubscriptionCategories",
+    []
+  );
+}
+
 // ====== SUBSCRIPTION FUNCTIONS ======
 function showSubscriptionButtons() {
   const mainContent = document.querySelector(".main-content");
@@ -155,15 +372,30 @@ function showSubscriptionButtons() {
 
 function renderSubscriptionStatistics(stats) {
   const s = stats || {};
+
+  // Old subscription screen tiles
   const elT = document.getElementById("sub-total");
   const elA = document.getElementById("sub-active");
   const elI = document.getElementById("sub-inactive");
-  const elR = document.getElementById("sub-renewals"); // only if you add a 4th box
+  const elR = document.getElementById("sub-renewals"); // optional
 
   if (elT) elT.textContent = s.total ?? 0;
   if (elA) elA.textContent = s.active ?? 0;
   if (elI) elI.textContent = s.inactive ?? 0;
   if (elR) elR.textContent = s.renewals ?? 0;
+
+  // NEW: main dashboard KPI mapping
+  const kActive = document.getElementById("sub-kpi-active");
+  const kRenew = document.getElementById("sub-kpi-renewals");
+  const kMon = document.getElementById("sub-kpi-monthly");
+  const kYr = document.getElementById("sub-kpi-yearly");
+  if (kActive) kActive.textContent = s.active ?? 0;
+  if (kRenew) kRenew.textContent = s.renewals ?? 0;
+  // Placeholder until wired to real data
+  if (kMon && (kMon.textContent === "0" || kMon.textContent === ""))
+    kMon.textContent = "—";
+  if (kYr && (kYr.textContent === "0" || kYr.textContent === ""))
+    kYr.textContent = "—";
 }
 
 let subscriptionStatsTimer = null;
@@ -238,60 +470,70 @@ function showComplianceButtons() {
 }
 
 function renderComplianceStatistics(stats) {
-  const totalEl = document.getElementById("stat-total");
+  const s = stats || {};
+
+  // Update values if the elements already exist
+  const yearlyEl = document.getElementById("stat-yearly");
   const activeEl = document.getElementById("stat-active");
   const pendingEl = document.getElementById("stat-pending");
 
-  // Update if boxes exist (no flicker)
-  if (totalEl && activeEl && pendingEl) {
-    const s = stats || {};
-    totalEl.textContent = s.total ?? 0;
+  if (yearlyEl && activeEl && pendingEl) {
+    yearlyEl.textContent = s.yearly ?? s.total ?? 0;
     activeEl.textContent = s.active ?? 0;
     pendingEl.textContent = s.pending ?? 0;
-    return;
+  } else {
+    // First render (build the three KPI boxes for Compliance)
+    const container = document.getElementById("compliance-stats-container");
+    if (container) {
+      container.innerHTML = `
+        <div class="stats-container">
+          <div class="stat-box purple">
+            <div class="stat-label">Yearly Spend</div>
+            <div id="stat-yearly" class="stat-value">${
+              s.yearly ?? s.total ?? 0
+            }</div>
+          </div>
+          <div class="stat-box green">
+            <div class="stat-label">Active</div>
+            <div id="stat-active" class="stat-value">${s.active ?? 0}</div>
+          </div>
+          <div class="stat-box yellow">
+            <div class="stat-label">Pending</div>
+            <div id="stat-pending" class="stat-value">${s.pending ?? 0}</div>
+          </div>
+        </div>
+      `;
+    }
   }
 
-  // First render fallback
-  const container = document.getElementById("compliance-stats-container");
-  if (container) {
-    container.innerHTML = `
-      <div class="stats-container">
-        <div class="stat-box purple">
-          <div class="stat-label">Total (This Year)</div>
-          <div id="stat-total" class="stat-value">${
-            (stats && stats.total) ?? 0
-          }</div>
-        </div>
-        <div class="stat-box green">
-          <div class="stat-label">Active</div>
-          <div id="stat-active" class="stat-value">${
-            (stats && stats.active) ?? 0
-          }</div>
-        </div>
-        <div class="stat-box yellow">
-          <div class="stat-label">Pending</div>
-          <div id="stat-pending" class="stat-value">${
-            (stats && stats.pending) ?? 0
-          }</div>
-        </div>
-      </div>
-    `;
+  // Map to the big dashboard KPIs (Compliance tab)
+  const kActive = document.getElementById("comp-kpi-active");
+  const kPending = document.getElementById("comp-kpi-pending");
+  const kYearly = document.getElementById("comp-kpi-yearly");
+
+  if (kActive) kActive.textContent = s.active ?? 0;
+  if (kPending) kPending.textContent = s.pending ?? 0;
+  if (kYearly) {
+    kYearly.textContent = s.yearly ?? s.total ?? 0;
+    if (kYearly.textContent === "0" || kYearly.textContent === "")
+      kYearly.textContent = "—";
   }
 }
 
 let complianceStatsTimer = null;
 
 function requestComplianceStats() {
-  // reuse the existing AL route that also sends stats
-  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-    "Compliance",
+  const { from, to } = getSelectedDashboardRange(); // helper below
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getComplianceStats", [
+    from,
+    to,
   ]);
 }
 
 function startComplianceStatsTimer() {
   if (complianceStatsTimer) clearInterval(complianceStatsTimer);
-  requestComplianceStats(); // immediate
-  complianceStatsTimer = setInterval(requestComplianceStats, 5000); // 5s
+  requestComplianceStats(); // refresh immediately
+  complianceStatsTimer = setInterval(requestComplianceStats, 5000); // every 5s
 }
 
 function stopComplianceStatsTimer() {
@@ -301,7 +543,7 @@ function stopComplianceStatsTimer() {
   }
 }
 
-// ====== SUBSCRIPTION & COMPLIANCE COMMON ======
+// ====== SUBSCRIPTION & COMPLIANCE CARDS COMMON ======
 function createSubscriptionCard(title, description, icon) {
   return `
     <div class="subscription-card" onclick="navigateTo('${title.replace(
@@ -335,6 +577,17 @@ function navigateTo(label) {
     label,
   ]);
 }
+function openSubscriptionSpendingTrend() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    "Open Subscription Chart",
+  ]);
+}
+
+// function openComplianceSpendingTrend() {
+//   Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+//     "Open Compliance Chart",
+//   ]);
+// }
 
 function animateStats() {
   const boxes = document.querySelectorAll(".stat-box");
@@ -392,6 +645,7 @@ function switchTab(tabName) {
 function loadTabContent(tabName, pageId, pageTitle) {
   const tabContent = document.getElementById(`${tabName}-tab`);
   const loadingElement = document.getElementById(`${tabName}-loading`);
+
   if (!tabContent || !loadingElement) return;
   if (tabContent.querySelector(".page-embed")) return;
 
@@ -432,6 +686,7 @@ function displayCompanyInformation(companyData) {
         <button class="tab-button-company" onclick="switchCompanyTab('user')"><span class="tab-icon">👤</span> User Management</button>
       </div>
 
+      <!-- Company tab -->
       <div class="tab-content-company active" id="company-tab">
         <h3 class="section-title">Company Information</h3>
         <p class="section-subtitle">Update your company details and branding</p>
@@ -477,7 +732,7 @@ function displayCompanyInformation(companyData) {
         </form>
       </div>
 
-      <!-- Departments -->
+      <!-- Department tab -->
       <div class="tab-content-company" id="department-tab">
         <div class="form-row" style="margin-bottom:12px;">
           <button type="button" class="btn" onclick="openAddDepartmentPage()">Add Department</button>
@@ -485,20 +740,21 @@ function displayCompanyInformation(companyData) {
         <div id="department-list" class="payment-list"></div>
       </div>
 
-      <!-- Employees -->
+      <!-- Employee tab -->
       <div class="tab-content-company" id="employee-tab">
         <div class="form-row" style="margin-bottom:12px;">
-          <button type="button" class="btn" onclick="openAddEmployeePage()">AddEmployee</button>
+          <button type="button" class="btn" onclick="openAddEmployeePage()">Add Employee</button>
         </div>
         <div id="employee-list" class="payment-list"></div>
       </div>
 
-     <div class="tab-content-company" id="subscription-tab">
-  <div class="form-row" style="margin-bottom:12px;">
-    <button type="button" class="btn" onclick="openSubscriptionCategoriesPage()">Add Subscription Categories</button>
-  </div>
-  <div id="subscription-category-list" class="payment-list"></div>
-</div>
+      <!-- Subscription Category tab -->
+      <div class="tab-content-company" id="subscription-tab">
+        <div class="form-row" style="margin-bottom:12px;">
+          <button type="button" class="btn" onclick="openSubscriptionCategoriesPage()">Add Subscription Categories</button>
+        </div>
+        <div id="subscription-category-list" class="payment-list"></div>
+      </div>
 
       <div class="tab-content-company" id="user-tab"><p>User Management content coming soon.</p></div>
     </div>
@@ -507,12 +763,17 @@ function displayCompanyInformation(companyData) {
   setupLogoUploadHandler();
   animateContainer(mainContent.querySelector(".company-container"));
 
-  // If a tab is already active at first render, fetch its data
+  // initial fetches if tabs start active
   if (document.getElementById("department-tab")?.classList.contains("active")) {
     loadDepartments();
   }
   if (document.getElementById("employee-tab")?.classList.contains("active")) {
     loadEmployees();
+  }
+  if (
+    document.getElementById("subscription-tab")?.classList.contains("active")
+  ) {
+    loadSubscriptionCategories();
   }
 }
 
@@ -520,7 +781,7 @@ function setupLogoUploadHandler() {
   const fileInput = document.getElementById("logo-upload");
   const preview = document.getElementById("logo-preview");
 
-  fileInput.addEventListener("change", function (e) {
+  fileInput?.addEventListener("change", function (e) {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -552,7 +813,7 @@ function switchCompanyTab(tabName) {
   } else if (tabName === "employee") {
     loadEmployees();
   } else if (tabName === "subscription") {
-    loadSubscriptionCategories(); // <-- ADD THIS
+    loadSubscriptionCategories();
   }
 }
 
@@ -567,6 +828,7 @@ function saveCompanyInformation() {
       countryRegionCode: document.getElementById("country").value,
     },
   };
+
   Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("updateCompanyInformation", [
     companyData,
   ]);
@@ -614,7 +876,6 @@ function displayInitialSetup(setupData) {
             </div>
           </div>
 
-          <!-- Read-only mirror of Employee series -->
           <div class="form-row">
             <div class="form-group">
               <label for="employee-ext-nos">Employee Nos. (managed via “Assign Manually”)</label>
@@ -698,19 +959,6 @@ function displayInitialSetup(setupData) {
   animateContainer(mainContent.querySelector(".company-container"));
 }
 
-function saveInitialSetup() {
-  const payload = {
-    setup: {
-      subscriptionNos: document.getElementById("subscription-nos").value.trim(),
-      complianceNos: document.getElementById("compliance-nos").value.trim(),
-      employeeExtNos: document.getElementById("employee-ext-nos").value.trim(),
-    },
-  };
-  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("updateInitialSetup", [
-    payload,
-  ]);
-}
-
 function switchInitialSetupTab(tabName) {
   const tabButtons = document.querySelectorAll(".tab-button-company");
   tabButtons.forEach((button) => {
@@ -741,7 +989,6 @@ function openInitialSetupManually() {
     ["Assign Manually"],
     false,
     function () {
-      // After the card closes, reload so UI shows new series immediately
       Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
         "Initial Setup",
       ]);
@@ -843,11 +1090,16 @@ function loadPaymentMethods() {
   Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getPaymentMethods", []);
 }
 
-// AL -> JS
 function renderPaymentMethods(methods) {
   const arr = Array.isArray(methods) ? methods : methods?.value || [];
   const list = document.getElementById("payment-methods-list");
   if (!list) return;
+
+  if (arr.length === 0) {
+    list.innerHTML = `<div style="opacity:.8;">No payment methods found.</div>`;
+    return;
+  }
+
   list.innerHTML = arr.map(createPaymentCardHTML).join("");
   animateCards();
 }
@@ -873,11 +1125,6 @@ function editPaymentMethod(id) {
   );
 }
 
-function displayIconLabel(key) {
-  const icon = PM_ICONS.find((i) => i.key === key);
-  return icon ? icon.label : "💳";
-}
-
 // ====== UTILITY FUNCTIONS ======
 function createAnimatedBackground() {
   const body = document.body;
@@ -893,6 +1140,7 @@ function animateContainer(container) {
   container.style.opacity = "0";
   container.style.transform = "translateY(20px)";
   container.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+
   setTimeout(() => {
     container.style.opacity = "1";
     container.style.transform = "translateY(0)";
@@ -909,7 +1157,7 @@ function escapeHtml(s) {
   );
 }
 
-// Pause/resume compliance auto-refresh when tab visibility changes
+// pause/resume compliance polling based on tab visibility
 document.addEventListener("visibilitychange", () => {
   const onCompliance =
     document.querySelector(".nav-link.active")?.textContent.trim() ===
@@ -917,6 +1165,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) stopComplianceStatsTimer();
   else if (onCompliance) startComplianceStatsTimer();
 });
+
 window.addEventListener("beforeunload", stopComplianceStatsTimer);
 
 // ====== DEPARTMENTS ======
@@ -926,8 +1175,8 @@ function openAddDepartmentPage() {
     ["Add Department"],
     false,
     function () {
-      loadDepartments();
-    } // refresh after closing card
+      loadDepartments(); // refresh after closing the card
+    }
   );
 }
 
@@ -935,7 +1184,6 @@ function loadDepartments() {
   Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getDepartments", []);
 }
 
-// AL -> JS
 function renderDepartments(departments) {
   const arr = Array.isArray(departments)
     ? departments
@@ -961,15 +1209,27 @@ function renderDepartments(departments) {
     .join("");
 }
 
+function editDepartment(code) {
+  if (!code) return;
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+    "OnNavigationClick",
+    ["EditDepartment:" + code],
+    false,
+    function () {
+      loadDepartments();
+    }
+  );
+}
+
 // ====== EMPLOYEES ======
 function openAddEmployeePage() {
   Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
     "OnNavigationClick",
-    ["AddEmployee"], // must exactly match your AL case
+    ["AddEmployee"],
     false,
     function () {
       loadEmployees();
-    } // refresh after closing the card
+    }
   );
 }
 
@@ -977,7 +1237,6 @@ function loadEmployees() {
   Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getEmployees", []);
 }
 
-// AL -> JS
 function renderEmployees(employees) {
   const arr = Array.isArray(employees) ? employees : employees?.value || [];
   const list = document.getElementById("employee-list");
@@ -991,11 +1250,13 @@ function renderEmployees(employees) {
   list.innerHTML = arr
     .map(
       (e) => `
-    <div class="payment-card" onclick="editEmployee('${e.no || ""}')">
-      <div class="title">${escapeHtml(e.name || e.no || "")}</div>
-      <div class="meta">${escapeHtml(e.no || "")}</div>
-    </div>
-  `
+      <div class="payment-card" onclick="editEmployee('${(e.no || "").replace(
+        /'/g,
+        "\\'"
+      )}')">
+        <div class="title">${escapeHtml(e.name || e.no || "")}</div>
+        <div class="meta">${escapeHtml(e.no || "")}</div>
+      </div>`
     )
     .join("");
 }
@@ -1011,18 +1272,8 @@ function editEmployee(no) {
     }
   );
 }
-function editDepartment(code) {
-  if (!code) return;
-  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
-    "OnNavigationClick",
-    ["EditDepartment:" + code],
-    false,
-    function () {
-      // refresh the list after user closes the card
-      loadDepartments();
-    }
-  );
-}
+
+// ====== SUBSCRIPTION CATEGORIES ======
 function openSubscriptionCategoriesPage() {
   Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
     "OnNavigationClick",
@@ -1030,6 +1281,7 @@ function openSubscriptionCategoriesPage() {
     false,
     function () {
       loadSubscriptionCategories(); // refresh after closing the page
+      loadSubscriptionCategoriesForFilter(); // also refresh the dashboard filter
     }
   );
 }
@@ -1041,28 +1293,45 @@ function loadSubscriptionCategories() {
   );
 }
 
-// AL -> JS: render list
 function renderSubscriptionCategories(categories) {
   const arr = Array.isArray(categories) ? categories : categories?.value || [];
   const list = document.getElementById("subscription-category-list");
-  if (!list) return;
-
-  if (arr.length === 0) {
-    list.innerHTML = `<div style="opacity:.8;">No subscription categories found.</div>`;
-    return;
+  if (list) {
+    if (arr.length === 0) {
+      list.innerHTML = `<div style="opacity:.8;">No subscription categories found.</div>`;
+    } else {
+      list.innerHTML = arr
+        .map(
+          (c) => `
+          <div class="payment-card" onclick="editSubscriptionCategory('${(
+            c.code || ""
+          ).replace(/'/g, "\\'")}')">
+            <div class="title">${escapeHtml(c.name || c.code || "")}</div>
+            <div class="meta">${escapeHtml(c.code || "")}</div>
+          </div>`
+        )
+        .join("");
+    }
   }
 
-  list.innerHTML = arr
-    .map(
-      (c) => `
-      <div class="payment-card" onclick="editSubscriptionCategory('${(
-        c.code || ""
-      ).replace(/'/g, "\\'")}')">
-        <div class="title">${escapeHtml(c.name || c.code || "")}</div>
-        <div class="meta">${escapeHtml(c.code || "")}</div>
-      </div>`
-    )
-    .join("");
+  // ALSO seed the filter dropdown on the main dashboard if present
+  const dd = document.getElementById("dash-category");
+  if (dd) {
+    const sel = dd.value; // preserve selection
+    dd.innerHTML =
+      `<option value="">All Categories</option>` +
+      (arr || [])
+        .map(
+          (c) =>
+            `<option value="${(c.code || "").replace(
+              /"/g,
+              "&quot;"
+            )}">${escapeHtml(c.name || c.code || "")}</option>`
+        )
+        .join("");
+    const opt = [...dd.options].find((o) => o.value === sel);
+    if (opt) dd.value = sel;
+  }
 }
 
 function editSubscriptionCategory(code) {
@@ -1072,10 +1341,58 @@ function editSubscriptionCategory(code) {
     ["EditSubscriptionCategory:" + code],
     false,
     function () {
-      loadSubscriptionCategories(); // refresh after closing
+      loadSubscriptionCategories();
+      loadSubscriptionCategoriesForFilter();
     }
   );
 }
-if (document.getElementById("subscription-tab")?.classList.contains("active")) {
-  loadSubscriptionCategories();
+function openComplianceSpendingTrend() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    "Open Compliance Chart",
+  ]);
+}
+
+function getSelectedDashboardRange() {
+  // assumes the time-range select exists on the dashboard
+  //const sel = document.querySelector("#time-range-select"); // <-- use your actual ID
+  const sel = document.querySelector("#dash-range");
+  const val = (sel?.value || "6m").toLowerCase(); // e.g., '6m', '12m', '3m', 'thisyear'
+
+  const today = new Date();
+  let from = new Date(today);
+  let to = new Date(today);
+
+  const monthsBack = (n) => {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() - n);
+    return d;
+  };
+
+  switch (val) {
+    case "3m":
+      from = monthsBack(3);
+      break;
+    case "6m":
+      from = monthsBack(6);
+      break;
+    case "12m":
+    case "1y":
+      from = monthsBack(12);
+      break;
+    case "thisyear":
+      from = new Date(today.getFullYear(), 0, 1);
+      break;
+    default:
+      from = monthsBack(6);
+  }
+
+  // Convert to BC-friendly yyyy-mm-dd text
+  const toText = to.toISOString().slice(0, 10);
+  const fromText = from.toISOString().slice(0, 10);
+  return { from: fromText, to: toText };
+}
+function openComplianceChart() {
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+    "Open Compliance Chart",
+  ]);
 }

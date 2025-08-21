@@ -179,45 +179,36 @@ page 50110 "Add Subscription"
                         ShowCaption = false;
 
                         field("Payment Method"; Rec."Payment Method")
-                        {
-                            ApplicationArea = All;
-                            ToolTip = 'Select the payment method for this subscription.';
-                            TableRelation = "Custom Payment Method".Code;
+{
+    ApplicationArea = All;
+    ToolTip = 'Select the payment method for this subscription.';
+    TableRelation = "ST Payment Method"."Entry No.";
 
-                            trigger OnValidate()
-                            var
-                                CustomPaymentMethod: Record "Custom Payment Method";
-                            begin
-                                if Rec."Payment Method" <> '' then begin
-                                    if not CustomPaymentMethod.Get(Rec."Payment Method") then
-                                        Error('Payment Method %1 does not exist.', Rec."Payment Method");
-                                end;
-                                UpdatePaymentMethodDescription();
-                                AutoSaveRecord();
-                            end;
+    trigger OnLookup(var Text: Text): Boolean
+    var
+        STPaymentMethod: Record "ST Payment Method";
+        STPaymentMethodsPage: Page "ST Payment Methods"; // Assuming you have a list page for "ST Payment Method" table
+    begin
+        STPaymentMethod.Reset(); // Optional: Add filters if needed
+        STPaymentMethodsPage.SetTableView(STPaymentMethod);
+        STPaymentMethodsPage.LookupMode(true);
+        if STPaymentMethodsPage.RunModal() = ACTION::LookupOK then begin
+            STPaymentMethodsPage.GetRecord(STPaymentMethod);
+            Rec."Payment Method" := STPaymentMethod.Description;
+            PaymentMethodDescription := STPaymentMethod.Title; // Set the page variable to the Title field
+            exit(true);
+        end;
+        exit(false);
+    end;
+}
 
-                            trigger OnLookup(var Text: Text): Boolean
-                            var
-                                CustomPaymentMethod: Record "Custom Payment Method";
-                                CustomPaymentMethodList: Page "Custom Payment Method List";
-                            begin
-                                CustomPaymentMethodList.LookupMode(true);
-                                if CustomPaymentMethodList.RunModal() = Action::LookupOK then begin
-                                    CustomPaymentMethodList.GetRecord(CustomPaymentMethod);
-                                    Rec."Payment Method" := CustomPaymentMethod.Code;
-                                    UpdatePaymentMethodDescription();
-                                    CurrPage.Update();
-                                end;
-                            end;
-                        }
-
-                        field("Payment Method Description"; PaymentMethodDescription)
-                        {
-                            ApplicationArea = All;
-                            Caption = 'Payment Method Name';
-                            Editable = false;
-                            Style = StandardAccent;
-                        }
+field("Payment Method Description"; PaymentMethodDescription)
+{
+    ApplicationArea = All;
+    Caption = 'Payment Method Name';
+    Editable = false;
+    Style = StandardAccent;
+}
 
                         field("Currency Code"; Rec."Currency Code")
                         {

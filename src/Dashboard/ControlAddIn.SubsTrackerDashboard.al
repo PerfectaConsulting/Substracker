@@ -44,4 +44,7 @@ procedure renderEmployees(Employees: JsonArray);
  event getSubscriptionCategories();
   procedure renderSubscriptionCategories(Categories: JsonArray);
 
+     procedure showMainDashboard();
+     event getComplianceStats(FromDateTxt: Text; ToDateTxt: Text);
+
 }
