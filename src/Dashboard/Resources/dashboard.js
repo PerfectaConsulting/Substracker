@@ -162,7 +162,7 @@ function showMainDashboard() {
 
         <!-- Charts (placeholders for now) -->
         <div class="subscription-grid" style="margin-top:10px">
-          <div class="subscription-card">
+          <div class="subscription-card" onclick="openSubscriptionSpendingTrend()">
             <div class="icon-container">📈</div>
             <div class="card-title">Spending Trends</div>
             <div class="card-description">Monthly spend over the selected time range</div>
@@ -372,30 +372,44 @@ function showSubscriptionButtons() {
 
 function renderSubscriptionStatistics(stats) {
   const s = stats || {};
+  const cur = s.lcy || "USD";
+
+  // currency formatter
+  const fmt = (x) => {
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: cur,
+        maximumFractionDigits: 2,
+      }).format(Number(x || 0));
+    } catch {
+      return Number(x || 0).toFixed(2) + (cur ? ` ${cur}` : "");
+    }
+  };
 
   // Old subscription screen tiles
   const elT = document.getElementById("sub-total");
   const elA = document.getElementById("sub-active");
   const elI = document.getElementById("sub-inactive");
-  const elR = document.getElementById("sub-renewals"); // optional
+  const elR = document.getElementById("sub-renewals");
 
   if (elT) elT.textContent = s.total ?? 0;
   if (elA) elA.textContent = s.active ?? 0;
   if (elI) elI.textContent = s.inactive ?? 0;
   if (elR) elR.textContent = s.renewals ?? 0;
 
-  // NEW: main dashboard KPI mapping
+  // Main dashboard KPI tiles (Subscription tab)
   const kActive = document.getElementById("sub-kpi-active");
   const kRenew = document.getElementById("sub-kpi-renewals");
   const kMon = document.getElementById("sub-kpi-monthly");
   const kYr = document.getElementById("sub-kpi-yearly");
+
   if (kActive) kActive.textContent = s.active ?? 0;
   if (kRenew) kRenew.textContent = s.renewals ?? 0;
-  // Placeholder until wired to real data
-  if (kMon && (kMon.textContent === "0" || kMon.textContent === ""))
-    kMon.textContent = "—";
-  if (kYr && (kYr.textContent === "0" || kYr.textContent === ""))
-    kYr.textContent = "—";
+
+  // Show calculated monthly/yearly spend with currency
+  if (kMon) kMon.textContent = fmt(s.monthly);
+  if (kYr) kYr.textContent = fmt(s.yearly);
 }
 
 let subscriptionStatsTimer = null;
@@ -471,27 +485,40 @@ function showComplianceButtons() {
 
 function renderComplianceStatistics(stats) {
   const s = stats || {};
+  const cur = s.lcy || "USD";
 
-  // Update values if the elements already exist
+  const fmt = (x) => {
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: cur,
+        maximumFractionDigits: 2,
+      }).format(Number(x || 0));
+    } catch {
+      // fallback if LCY is unusual/empty
+      return Number(x || 0).toFixed(2) + (cur ? ` ${cur}` : "");
+    }
+  };
+
+  // Update the three KPI boxes on the Compliance view (small tiles)
   const yearlyEl = document.getElementById("stat-yearly");
   const activeEl = document.getElementById("stat-active");
   const pendingEl = document.getElementById("stat-pending");
 
   if (yearlyEl && activeEl && pendingEl) {
-    yearlyEl.textContent = s.yearly ?? s.total ?? 0;
+    yearlyEl.textContent = fmt(s.yearly ?? s.total ?? 0);
     activeEl.textContent = s.active ?? 0;
     pendingEl.textContent = s.pending ?? 0;
   } else {
-    // First render (build the three KPI boxes for Compliance)
     const container = document.getElementById("compliance-stats-container");
     if (container) {
       container.innerHTML = `
         <div class="stats-container">
           <div class="stat-box purple">
             <div class="stat-label">Yearly Spend</div>
-            <div id="stat-yearly" class="stat-value">${
+            <div id="stat-yearly" class="stat-value">${fmt(
               s.yearly ?? s.total ?? 0
-            }</div>
+            )}</div>
           </div>
           <div class="stat-box green">
             <div class="stat-label">Active</div>
@@ -506,7 +533,7 @@ function renderComplianceStatistics(stats) {
     }
   }
 
-  // Map to the big dashboard KPIs (Compliance tab)
+  // Map to the big (main dashboard) KPIs on the Compliance tab
   const kActive = document.getElementById("comp-kpi-active");
   const kPending = document.getElementById("comp-kpi-pending");
   const kYearly = document.getElementById("comp-kpi-yearly");
@@ -514,7 +541,7 @@ function renderComplianceStatistics(stats) {
   if (kActive) kActive.textContent = s.active ?? 0;
   if (kPending) kPending.textContent = s.pending ?? 0;
   if (kYearly) {
-    kYearly.textContent = s.yearly ?? s.total ?? 0;
+    kYearly.textContent = fmt(s.yearly ?? s.total ?? 0);
     if (kYearly.textContent === "0" || kYearly.textContent === "")
       kYearly.textContent = "—";
   }

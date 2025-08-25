@@ -90,7 +90,7 @@ end;
             PageName = 'Compliance':
                 begin
                     OpenCompliancePage();
-                    SendComplianceStatistics(); // NEW: send stats to JS when Compliance is selected
+                    //SendComplianceStatistics(); // NEW: send stats to JS when Compliance is selected
                 end;
             PageName = 'Notification':
                 OpenNotificationPage();
@@ -343,7 +343,7 @@ begin
 
     // Optionally push initial data right away
     SendSubscriptionStatistics();
-    SendComplianceStatistics();
+    //SendComplianceStatistics();
 end;
 
 
@@ -363,10 +363,7 @@ end;
     local procedure OpenNotificationPage()
     begin
     end;
-trigger OnAfterGetCurrRecord()
-begin
-    SendComplianceStatistics();
-end;
+
 
     // -------------------------- Company Info --------------------------
     local procedure LoadCompanyInformation()
@@ -733,10 +730,6 @@ end;
 
     local procedure SendSubscriptionStatistics()
 var
-    // TODO: Replace with YOUR actual subscription table and fields
-    // Example assumptions below:
-    //   - Table: "ST Subscription"
-    //   - Fields: Status (Option: Active/Inactive), "Renewal Date" (Date)
     Sub: Record "Subscription";
     Stats: JsonObject;
 
@@ -747,40 +740,78 @@ var
 
     FirstDay: Date;
     LastDay: Date;
+
+    MonthlySpendLCY: Decimal;
+    YearlySpendLCY: Decimal;
+    MonthlyContribution: Decimal;
+
+    GLSetup: Record "General Ledger Setup"; // <-- added
 begin
-    // ---- Total
+    // ---- Totals
     Sub.Reset();
     TotalSubs := Sub.Count;
 
-    // ---- Active
     Sub.Reset();
-     
     Sub.SetRange(Status, Sub.Status::Active);
     ActiveSubs := Sub.Count;
 
-    // ---- Inactive
     Sub.Reset();
-    // inactive
     Sub.SetRange(Status, Sub.Status::Inactive);
     InactiveSubs := Sub.Count;
 
-    // ---- Renewals this month (optional fourth box, if you want it)
-    // Compute first/last day of current month
+    // ---- Renewals this month
     FirstDay := DMY2DATE(1, Date2DMY(Today(), 2), Date2DMY(Today(), 3));
     LastDay := CalcDate('<CM>', FirstDay) - 1;
     Sub.Reset();
-   
     Sub.SetRange("End Date", FirstDay, LastDay);
     RenewalsThisMonth := Sub.Count;
 
-    // Send to JS (keys are up to you; these are used below in JS)
+    // ---- Monthly/Yearly spend (normalize active subs to monthly)
+    MonthlySpendLCY := 0;
+    YearlySpendLCY := 0;
+
+    Sub.Reset();
+    Sub.SetRange(Status, Sub.Status::Active);
+    if Sub.FindSet() then
+        repeat
+            case Sub."Billing Cycle" of
+                Sub."Billing Cycle"::Weekly:
+                    MonthlyContribution := Sub."Amount in LCY" * 52 / 12;
+                Sub."Billing Cycle"::Monthly:
+                    MonthlyContribution := Sub."Amount in LCY";
+                Sub."Billing Cycle"::Quarterly:
+                    MonthlyContribution := Sub."Amount in LCY" / 3;
+                Sub."Billing Cycle"::Yearly:
+                    MonthlyContribution := Sub."Amount in LCY" / 12;
+                else
+                    MonthlyContribution := Sub."Amount in LCY";
+            end;
+            MonthlySpendLCY += MonthlyContribution;
+        until Sub.Next() = 0;
+
+    YearlySpendLCY := MonthlySpendLCY * 12;
+
+    MonthlySpendLCY := Round(MonthlySpendLCY, 0.01, '=');
+    YearlySpendLCY := Round(YearlySpendLCY, 0.01, '=');
+
+    // ---- Payload
     Stats.Add('total', TotalSubs);
     Stats.Add('active', ActiveSubs);
     Stats.Add('inactive', InactiveSubs);
     Stats.Add('renewals', RenewalsThisMonth);
+    Stats.Add('monthly', MonthlySpendLCY);
+    Stats.Add('yearly', YearlySpendLCY);
+
+    // Add LCY so JS can render currency
+    if GLSetup.Get() then
+        Stats.Add('lcy', GLSetup."LCY Code")
+    else
+        Stats.Add('lcy', '');
 
     CurrPage.Dashboard.renderSubscriptionStatistics(Stats);
 end;
+
+
 
 local procedure SendDepartments()
 var
