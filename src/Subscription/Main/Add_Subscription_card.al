@@ -279,6 +279,7 @@ field("Payment Method Description"; PaymentMethodDescription)
                         field("End Date"; Rec."End Date")
                         {
                             ApplicationArea = All;
+                            Caption='Next renewal Date';
                             ToolTip = 'End Date is automatically calculated based on Start Date and Billing Cycle.';
                             Editable = true;
                             StyleExpr = EndDateStyleExpr;
@@ -391,6 +392,8 @@ field("Payment Method Description"; PaymentMethodDescription)
     {
         area(processing)
         {
+
+            
             action(SelectDepartmentsAction)
             {
                 ApplicationArea = All;
@@ -656,7 +659,7 @@ field("Payment Method Description"; PaymentMethodDescription)
     trigger OnAfterGetRecord()
     begin
         InitializeVariables();
-        SafeUpdateStatusAndRefresh();
+        //SafeUpdateStatusAndRefresh();
         SafeUpdateDisplayInfoWithCache();
         UpdatePaymentMethodDescription();
         SetConditionalFormatting();
@@ -665,7 +668,7 @@ field("Payment Method Description"; PaymentMethodDescription)
 
     trigger OnAfterGetCurrRecord()
     begin
-        SafeUpdateStatusAndRefresh();
+        //SafeUpdateStatusAndRefresh();
         SafeUpdateDisplayInfoWithCache();
         UpdatePaymentMethodDescription();
         SetConditionalFormatting();
@@ -1170,4 +1173,32 @@ field("Payment Method Description"; PaymentMethodDescription)
         UsersEnabled := (Rec."No." <> '');
         EndUsersEnabled := (Rec."No." <> '');
     end;
+
+    trigger OnQueryClosePage(CloseAction: Action): Boolean
+    var
+        NothingEntered: Boolean;
+        ConfirmLbl: Label 'No data has been entered. Do you wish to exit and delete this record, or continue editing?', Locked = true;
+    begin
+        // Prompt only if the three fields are all empty
+        NothingEntered :=
+            (Rec."Service Name" = '') and
+            (Rec.Vendor = '') and
+            (Rec."Category Code" = '');
+
+        if NothingEntered then begin
+            // Confirm(default = Cancel).  TRUE => OK, FALSE => Cancel
+            if not Confirm(ConfirmLbl, false) then
+                exit(false); // Cancel -> keep page open
+
+            // OK -> if a row was actually inserted, delete it; otherwise just close.
+            // (Subscription ID <> 0 implies the record has been persisted; avoids delete errors)
+            if Rec."Subscription ID" <> 0 then
+                Rec.Delete(false); // delete without triggers to avoid ledger noise for an empty record
+
+            exit(true); // proceed to close
+        end;
+
+        exit(true); // no prompt needed; allow close
+    end;
+
 }

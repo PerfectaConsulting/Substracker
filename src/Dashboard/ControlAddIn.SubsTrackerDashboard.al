@@ -10,41 +10,27 @@ controladdin SubsTrackerDashboard
     Scripts = '../Dashboard/Resources/dashboard.js';
     StyleSheets = '../Dashboard/Resources/Dashboard.css';
 
+    // Events (JS -> AL)
     event OnNavigationClick(PageName: Text);
     event updateCompanyInformation(CompanyData: JsonObject);
     event updateInitialSetup(SetupData: JsonObject);
-
     event savePaymentMethod(PaymentMethodData: JsonObject);
     event getPaymentMethods();
+    event getSubscriptionStats();
+    event getDepartments();
+    event getEmployees();
+    event getSubscriptionCategories();
+    event getComplianceStats(FromDateTxt: Text; ToDateTxt: Text);
 
+    // Procedures (AL -> JS)
     procedure setActiveNavigation(PageName: Text);
+    procedure showMainDashboard();
     procedure displayCompanyInformation(CompanyData: JsonObject);
     procedure displayInitialSetup(SetupData: JsonObject);
     procedure renderPaymentMethods(PaymentMethods: JsonArray);
-
-    // NEW
+    procedure renderSubscriptionStatistics(Stats: JsonObject);
     procedure renderComplianceStatistics(Stats: JsonObject);
-
-
-    // Ask AL for subscription stats
-event getSubscriptionStats();
-
-// AL -> JS: render subscription stats
-procedure renderSubscriptionStatistics(Stats: JsonObject);
-
-// Ask AL to send departments
-event getDepartments();
-procedure renderDepartments(Departments: JsonArray);
-
-// Add to interface for JS <-> AL bridge
-event getEmployees();
-procedure renderEmployees(Employees: JsonArray);
-
-
- event getSubscriptionCategories();
-  procedure renderSubscriptionCategories(Categories: JsonArray);
-
-     procedure showMainDashboard();
-     event getComplianceStats(FromDateTxt: Text; ToDateTxt: Text);
-
+    procedure renderDepartments(Departments: JsonArray);
+    procedure renderEmployees(Employees: JsonArray);
+    procedure renderSubscriptionCategories(Categories: JsonArray);
 }

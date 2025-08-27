@@ -69,5 +69,6 @@ table 70111 "Compliance Overview Archive"
     keys
     {
         key(PK; "Archive ID") { Clustered = true; }
+         key(PK2; "SystemCreatedAt") {  }
     }
 }

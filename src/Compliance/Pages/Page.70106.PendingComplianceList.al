@@ -9,6 +9,11 @@ page 70106 "Pending Compliance List"
     InsertAllowed = false;
     DeleteAllowed = false;
 
+    SourceTableView = 
+        sorting("Filing Due Date")
+        order(Ascending)
+        where(Status = filter("No Due Date" | Overdue));
+
     layout
     {
         area(content)
@@ -32,8 +37,4 @@ page 70106 "Pending Compliance List"
         }
     }
 
-    trigger OnOpenPage()
-    begin
-        Rec.SetRange(Status, Rec.Status::"No Due Date");
-    end;
-}
+    }

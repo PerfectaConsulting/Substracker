@@ -278,6 +278,11 @@ table 50110 "Subscription"
         key(AmountLCY; "Amount in LCY")
         {
         }
+        key(CreatedDate; "Created Date")
+{
+    // No special properties needed; exists to support ORDER(Descending) efficiently
+}
+
     }
 
     var

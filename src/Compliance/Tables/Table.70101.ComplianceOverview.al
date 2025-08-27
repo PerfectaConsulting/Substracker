@@ -60,6 +60,7 @@ table 70101 "Compliance Overview"
     keys
     {
         key(PK; "ID") { Clustered = true; }
+         key(PK2; "Filing Due Date") {  }
     }
     trigger OnInsert()
     var

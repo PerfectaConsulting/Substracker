@@ -50,6 +50,12 @@ page 50127 "Subscription Ledger Entries"
                     ToolTip = 'Subscription amount';
                 }
 
+                field("Amount in LCY"; Rec."Amount in LCY")
+            {
+                ApplicationArea = All;
+                ToolTip = 'Subscription amount in local currency';
+            }
+
                 field("Billing Cycle"; Rec."Billing Cycle")
                 {
                     ApplicationArea = All;
