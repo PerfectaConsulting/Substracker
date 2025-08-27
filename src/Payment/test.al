@@ -15,8 +15,8 @@ table 70150 "ST Payment Method"
         field(20; "Type"; Option)
         {
             Caption = 'Type';
-            OptionMembers = type1,type2;
-            OptionCaption = 'Type 1,Type 2';
+            OptionMembers = "Credit Card", "Debit Card", "Bank Transfer", "Cash", "Digital Wallet";
+            OptionCaption = 'Credit Card, Debit Card , Bank Transfer, Cash, Digital Wallet';
         }
         field(30; "Description"; Text[250]) { Caption = 'Description'; }
         field(40; "Icon"; Text[30]) { Caption = 'Icon (Key)'; }

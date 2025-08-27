@@ -479,8 +479,12 @@ end;
 
         if MethodData.Get('type', Tok) then
             case LowerCase(Tok.AsValue().AsText()) of
-                'type1': PM.Type := PM.Type::type1;
-                'type2': PM.Type := PM.Type::type2;
+                'Credit Card': PM.Type := PM.Type::"Credit Card";
+                'Debit Card': PM.Type := PM.Type::"Debit Card";
+                'Bank Transfer': PM.Type := PM.Type::"Bank Transfer";
+                'Cash': PM.Type := PM.Type::Cash;
+                'Digital Wallet': PM.Type := PM.Type::"Digital Wallet";
+                
             end;
 
         if MethodData.Get('description', Tok) then

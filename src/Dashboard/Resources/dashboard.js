@@ -253,8 +253,11 @@ function getInitialSetupHTML(setupData) {
                 <label for="pm-type">Type (*)</label>
                 <select id="pm-type">
                   <option value="">Select type</option>
-                  <option value="type1">Type 1</option>
-                  <option value="type2">Type 2</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="Debit Card">Debit Card</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Digital Wallet">Digital Wallet</option>
                 </select>
               </div>
               <div class="form-group">
@@ -807,34 +810,64 @@ function renderPaymentMethods(methods) {
   const arr = Array.isArray(methods) ? methods : methods?.value || [];
   const list = document.getElementById("payment-methods-list");
   if (!list) return;
-  if (arr.length === 0) {
-    list.innerHTML = `<div style="opacity:.8;">No payment methods found.</div>`;
-    return;
-  }
-  list.innerHTML = arr
-    .map(
-      (m) => `
-    <button class="payment-card" data-action="edit-pm" data-id="${String(
-      m.id
-    )}">
-      <div class="icon-pill" data-icon="${escapeHtml(m.icon || "")}"></div>
-      <div class="title">${escapeHtml(m.title || "")}</div>
-      <div class="meta">${escapeHtml(m.description || "")}</div>
-    </button>
-  `
-    )
-    .join("");
 
-  list.addEventListener("click", (e) => {
+  // Render tiles with both id (Entry No.) and sysId (GUID)
+  list.innerHTML =
+    arr.length === 0
+      ? `<div style="opacity:.8;">No payment methods found.</div>`
+      : arr
+          .map((m) => {
+            const id = m.id; // number (may be 0/null)
+            const sysId = m.sysId || ""; // GUID string
+            return `
+              <button class="payment-card" data-action="edit-pm"
+                      data-id="${
+                        id !== undefined && id !== null ? String(id) : ""
+                      }"
+                      data-sysid="${escapeAttr(sysId)}">
+                <div class="icon-pill" data-icon="${escapeHtml(
+                  m.icon || ""
+                )}"></div>
+                <div class="title">${escapeHtml(m.title || "")}</div>
+                <div class="meta">${escapeHtml(m.description || "")}</div>
+              </button>
+            `;
+          })
+          .join("");
+
+  // Prevent duplicate listeners across re-renders
+  if (list._clickHandler) {
+    list.removeEventListener("click", list._clickHandler);
+  }
+  list._clickHandler = (e) => {
     const btn = e.target.closest("[data-action='edit-pm']");
     if (!btn) return;
-    Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-      "EditPaymentMethod:" + btn.getAttribute("data-id"),
-    ]);
-  });
 
+    const idAttr = btn.getAttribute("data-id");
+    const sysId = btn.getAttribute("data-sysid") || "";
+
+    // Prefer numeric Entry No. when valid (>0), otherwise fall back to SystemId
+    const idNum = Number(idAttr);
+    if (Number.isFinite(idNum) && idNum > 0) {
+      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+        "EditPaymentMethod:" + String(idNum),
+      ]);
+    } else if (sysId) {
+      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+        "EditPaymentMethodSys:" + sysId,
+      ]);
+    } else {
+      // As a last resort, do nothing (or console.warn)
+      // console.warn("Payment method tile missing both id and sysId");
+    }
+  };
+  list.addEventListener("click", list._clickHandler);
+
+  // Optional: keep animation
   animateCards();
 }
+
+
 
 function renderDepartments(departments) {
   const arr = Array.isArray(departments)
