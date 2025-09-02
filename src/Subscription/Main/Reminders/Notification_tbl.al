@@ -1,62 +1,70 @@
-table 50140 "Notification"
+table 70140 "Subscription Reminder"
 {
+    Caption = 'Subscription Reminder';
     DataClassification = ToBeClassified;
-    Caption = 'Notification';
 
     fields
     {
-        field(1; "Entry No."; Integer)
+        field(1; ID; Integer)
         {
             DataClassification = SystemMetadata;
             AutoIncrement = true;
-            Caption = 'Entry No.';
         }
-        field(2; "Subscription No."; Code[20])
+
+        field(2; "Subscription ID"; Integer)
         {
+            Caption = 'Subscription ID';
             DataClassification = CustomerContent;
-            Caption = 'Subscription No.';
-            TableRelation = "Subscription"."No.";
         }
-        field(3; "Created Date"; DateTime)
+
+        field(3; "Subscription Name"; Text[100])
         {
+            Caption = 'Subscription Name';
             DataClassification = CustomerContent;
-            Caption = 'Created Date';
         }
-        field(4; "Message"; Text[250])
+
+        field(4; "Reminder Date"; Date)
         {
-            DataClassification = CustomerContent;
+            Caption = 'Reminder Date';
+            DataClassification = SystemMetadata;
+        }
+
+        field(5; Message; Text[250])
+        {
             Caption = 'Message';
-        }
-        field(5; "Is Read"; Boolean)
-        {
             DataClassification = CustomerContent;
-            Caption = 'Read';
-            InitValue = false;
         }
-        field(6; "User ID"; Code[50])
+
+        field(6; "Is Today"; Boolean)
         {
+            Caption = 'Is Today';
+            DataClassification = SystemMetadata;
+        }
+
+        field(7; "Subscription Due Date"; Date)
+        {
+            Caption = 'Subscription Due Date';
             DataClassification = CustomerContent;
-            Caption = 'User ID';
-            TableRelation = User."User Name";
+        }
+
+        field(8; "Reminder Lead Time"; Integer)
+        {
+            Caption = 'Reminder Lead Time';
+            DataClassification = CustomerContent;
+        }
+
+        field(9; "Email Sent"; Boolean)
+        {
+            Caption = 'Email Sent';
+            DataClassification = SystemMetadata;
         }
     }
 
     keys
     {
-        key(PK; "Entry No.")
+        key(PK; ID)
         {
             Clustered = true;
         }
-        key("User ID"; "User ID", "Is Read", "Created Date")
-        {
-        }
-        key("Subscription"; "Subscription No.", "User ID", "Created Date")
-        {
-        }
     }
-
-    trigger OnDelete()
-    begin
-        // Add any cleanup logic if needed
-    end;
 }

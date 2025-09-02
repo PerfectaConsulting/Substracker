@@ -12,7 +12,7 @@ permissionset 50100 "SUBSTRACKER ALL"
         tabledata "Subscription" = RIMD,
         tabledata "Employee Ext" = RIMD,
         tabledata "Subscription Ledger Entry" = RIMD,
-        tabledata "Notification" = RIMD,
+        tabledata "Subscription Reminder" = RIMD,
         tabledata "End User" = RIMD,
         tabledata "Employee Ext Setup" = RIMD,
         tabledata "Department Master" = RIMD,

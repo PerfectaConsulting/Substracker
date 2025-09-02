@@ -1,4 +1,4 @@
-codeunit 70142 "Subscription Reminder"
+codeunit 70147 "SubscriptionReminderGenerator"
 {
     Subtype = Normal;
 
@@ -56,12 +56,12 @@ codeunit 70142 "Subscription Reminder"
                 if not RemRec.FindFirst() then begin
                     // NOTE: Ensure these enum members match your "Reminder Policy" enum
                     case SubRec."Reminder Policy" of
-                        SubRec."Reminder Policy":: "One Time":
+                        SubRec."Reminder Policy"::"One Time":
                             begin
                                 if TodayDate = (SubRec."End Date" - DaysBeforeDue) then
                                     InsertReminder(SubRec, DaysBeforeDue, CurrentDt);
                             end;
-                        SubRec."Reminder Policy":: "Two Time":
+                        SubRec."Reminder Policy"::"Two Time":
                             begin
                                 if TodayDate = (SubRec."End Date" - DaysBeforeDue) then
                                     InsertReminder(SubRec, DaysBeforeDue, CurrentDt)
@@ -71,7 +71,7 @@ codeunit 70142 "Subscription Reminder"
                                         InsertReminder(SubRec, DaysBeforeDue, CurrentDt);
                                 end;
                             end;
-                        SubRec."Reminder Policy":: "Until Renewal":
+                        SubRec."Reminder Policy"::"Until Renewal":
                             begin
                                 if (TodayDate >= (SubRec."End Date" - DaysBeforeDue)) and (TodayDate <= SubRec."End Date") then
                                     InsertReminder(SubRec, DaysBeforeDue, CurrentDt);

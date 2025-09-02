@@ -9,8 +9,9 @@ controladdin SubsTrackerDashboard
 
     Scripts = '../Dashboard/Resources/dashboard.js';
     StyleSheets = '../Dashboard/Resources/Dashboard.css';
+    Images = '../Dashboard/Resources/logo.png';
 
-    // Events (JS -> AL)
+    // ========= Events (JS -> AL) =========
     event OnNavigationClick(PageName: Text);
     event updateCompanyInformation(CompanyData: JsonObject);
     event updateInitialSetup(SetupData: JsonObject);
@@ -22,7 +23,10 @@ controladdin SubsTrackerDashboard
     event getSubscriptionCategories();
     event getComplianceStats(FromDateTxt: Text; ToDateTxt: Text);
 
-    // Procedures (AL -> JS)
+    // 🔹 NEW: JS asks AL for filtered subscriptions
+    event getSubscriptions(Filter: JsonObject);
+
+    // ========= Procedures (AL -> JS) =========
     procedure setActiveNavigation(PageName: Text);
     procedure showMainDashboard();
     procedure displayCompanyInformation(CompanyData: JsonObject);
@@ -33,4 +37,7 @@ controladdin SubsTrackerDashboard
     procedure renderDepartments(Departments: JsonArray);
     procedure renderEmployees(Employees: JsonArray);
     procedure renderSubscriptionCategories(Categories: JsonArray);
+
+    // 🔹 NEW: AL sends the rows to the grid
+    procedure renderSubscriptions(Subscriptions: JsonArray);
 }

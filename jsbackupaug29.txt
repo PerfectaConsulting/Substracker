@@ -32,14 +32,6 @@ const PM_ICONS = [
 
 let pmSelectedIcon = "visa";
 let logoBase64 = "";
-// --- Resolve folder where this JS file lives (…/Dashboard/Resources/) ---
-let ASSET_BASE = "";
-(function resolveAssetBase() {
-  const s = document.querySelector('script[src*="dashboard.js"]');
-  if (s && s.src) {
-    ASSET_BASE = s.src.replace(/dashboard\.js(\?.*)?$/i, "");
-  }
-})();
 
 const Poller = {
   sub: null,
@@ -80,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
    ========================= */
 function initializeDashboard() {
   document.body.innerHTML = getShellHTML(); // inject shell
-  primeLogo();
+    primeLogo();     
   setupNavigation(); // wire nav
   setupThemeToggle(); // wire THEME TOGGLE (now that it exists)
   showWelcome(); // initial content
@@ -91,13 +83,12 @@ function getShellHTML() {
     <div class="dashboard-container">
       <aside class="sidebar">
         <div class="logo">
-  <img id="brand-logo" class="logo-img" alt="SubsTracker logo" hidden>
-  <div id="brand-fallback" class="logo-icon" aria-hidden="true">S</div>
-  <span class="brand">
-    <span class="brand-left">Subs</span><span class="brand-right">Tracker</span>
-  </span>
-</div>
-
+          <img id="brand-logo" class="logo-img" alt="SubsTracker logo" />
+          <div id="brand-fallback" class="logo-icon" aria-hidden="true">S</div>
+          <span class="brand">
+            <span class="brand-left">SubsTracker</span>
+          </span>
+        </div>
 
         <div class="sidebar-actions">
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" title="Switch theme">
@@ -616,97 +607,56 @@ function requestComplianceStats() {
   ]);
 }
 
-// tiny 4cm x 1cm tile
-function miniTile(label, emoji) {
-  return `
-    <button data-label="${escapeAttr(label)}"
-            style="
-              width:4cm;height:1cm;
-              display:inline-flex;align-items:center;justify-content:center;gap:8px;
-              border:1px solid var(--border);border-radius:10px;
-              background:var(--panel);color:var(--text-1);font-weight:700;">
-      <span aria-hidden="true">${emoji}</span>
-      <span>${escapeHtml(label)}</span>
-    </button>
-  `;
-}
-
-// --- REPLACE the whole function with this version ---
 function showSubscriptionButtons() {
   const main = document.querySelector(".main-content");
   if (!main) return;
-
   main.innerHTML = `
     <div id="subscription-stats-container">
-      <div class="stats-container" style="margin-bottom:12px">
+      <div class="stats-container">
         <div class="stat-box purple"><div class="stat-label">Total Subscriptions</div><div id="sub-total" class="stat-value">0</div></div>
         <div class="stat-box green"><div class="stat-label">Active</div><div id="sub-active" class="stat-value">0</div></div>
         <div class="stat-box yellow"><div class="stat-label">Inactive</div><div id="sub-inactive" class="stat-value">0</div></div>
       </div>
     </div>
-
-    <!-- 5 compact tiles in one row (4cm x 1cm) -->
-    <div id="sub-quick-actions"
-         style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 14px 0;">
-      ${miniTile("Add Subscription", "✨")}
-      ${miniTile("Manage Subscriptions", "⚙️")}
-      ${miniTile("Active Subscriptions", "✅")}
-      ${miniTile("Inactive Subscriptions", "⛔")}
-      ${miniTile("Renewals This Month", "📅")}
-    </div>
-
-    <!-- Search & Filter -->
-    <div id="sub-filter-bar"
-         style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 12px 0;">
-      <input id="sub-search" type="search" placeholder="Search subscriptions by name"
-             style="flex:1 1 320px;min-width:260px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text)">
-      <select id="sub-filter-category"
-              style="flex:0 0 240px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text)">
-        <option value="">All Categories</option>
-      </select>
-      <button id="sub-refresh" class="btn" type="button">Search</button>
-    </div>
-
-    <!-- List -->
-    <div id="sub-list-container" style="overflow:auto;border-radius:12px;border:1px solid var(--border);">
-      <table id="sub-table" style="width:100%;border-collapse:collapse;">
-        <thead>
-          <tr style="background:var(--panel-soft);color:var(--text-1);text-align:left;">
-            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">No.</th>
-            <th style="padding:10px 12px;border-bottom:1px solid var(--border);">Name</th>
-            <th style="padding:10px 12px;border-bottom:1px solid var(--border);">Category</th>
-            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Status</th>
-            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Start Date</th>
-            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">End Date</th>
-            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:right;">Amount</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div class="subscription-grid">
+      ${createSubscriptionCard(
+        "Add Subscription",
+        "Create new subscription plans and add customers",
+        "✨"
+      )}
+      ${createSubscriptionCard(
+        "Manage Subscriptions",
+        "View, update, or delete existing subscriptions",
+        "⚙️"
+      )}
+      ${createSubscriptionCard(
+        "Active Subscriptions",
+        "View currently active subscription plans",
+        "✅"
+      )}
+      ${createSubscriptionCard(
+        "Inactive Subscriptions",
+        "See subscriptions that are inactive",
+        "🚫"
+      )}
+      ${createSubscriptionCard(
+        "Renewals This Month",
+        "Track all upcoming renewals this month",
+        "📅"
+      )}
     </div>
   `;
-
-  // wire quick actions -> same AL targets you already had
   document
-    .getElementById("sub-quick-actions")
+    .querySelector(".subscription-grid")
     ?.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-label]");
-      if (!btn) return;
+      const card = e.target.closest(".subscription-card[data-label]");
+      if (!card) return;
       Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        btn.getAttribute("data-label"),
+        card.getAttribute("data-label"),
       ]);
     });
-
-  // load KPIs
+  animateCards();
   Poller.start("sub", requestSubscriptionStats);
-
-  // populate categories for the filter + fetch list once ready
-  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
-    "getSubscriptionCategories",
-    []
-  );
-  wireSubFilters(); // hooks search / dropdown
-  runSubFilterNow(); // initial fetch
 }
 
 // Replace existing showComplianceButtons with this full version
@@ -974,10 +924,8 @@ function renderDepartments(departments) {
 function renderSubscriptionCategories(categories) {
   const arr = Array.isArray(categories) ? categories : categories?.value || [];
   const list = document.getElementById("subscription-category-list");
-  const ddDash = document.getElementById("dash-category"); // dashboard filter
-  const ddSub = document.getElementById("sub-filter-category"); // Subscription page filter
+  const dd = document.getElementById("dash-category");
 
-  /* ---- Cards list (optional panel) ---- */
   if (list) {
     list.innerHTML =
       arr.length === 0
@@ -985,19 +933,20 @@ function renderSubscriptionCategories(categories) {
         : arr
             .map(
               (c) => `
-            <button class="payment-card" data-action="edit-cat" data-code="${escapeAttr(
-              c.code || ""
-            )}">
-              <div class="title">${escapeHtml(c.name || c.code || "")}</div>
-              <div class="meta">${escapeHtml(c.code || "")}</div>
-            </button>
-          `
+          <button class="payment-card" data-action="edit-cat" data-code="${escapeAttr(
+            c.code || ""
+          )}">
+            <div class="title">${escapeHtml(c.name || c.code || "")}</div>
+            <div class="meta">${escapeHtml(c.code || "")}</div>
+          </button>
+        `
             )
             .join("");
 
-    // De-dupe click handler
-    if (list._clickHandler)
+    // De-dupe the click handler to prevent multiple opens
+    if (list._clickHandler) {
       list.removeEventListener("click", list._clickHandler);
+    }
     list._clickHandler = (e) => {
       const btn = e.target.closest("[data-action='edit-cat']");
       if (!btn) return;
@@ -1010,10 +959,10 @@ function renderSubscriptionCategories(categories) {
     animateCards();
   }
 
-  /* ---- Fill the two dropdowns (and preserve current selection) ---- */
-  if (ddDash) {
-    const prev = ddDash.value;
-    ddDash.innerHTML =
+  // Keep the dashboard filter dropdown in sync (and preserve selection)
+  if (dd) {
+    const prev = dd.value;
+    dd.innerHTML =
       `<option value="">All Categories</option>` +
       arr
         .map(
@@ -1023,25 +972,9 @@ function renderSubscriptionCategories(categories) {
             )}</option>`
         )
         .join("");
-    if ([...ddDash.options].some((o) => o.value === prev)) ddDash.value = prev;
-  }
-
-  if (ddSub) {
-    const prev2 = ddSub.value;
-    ddSub.innerHTML =
-      `<option value="">All Categories</option>` +
-      arr
-        .map(
-          (c) =>
-            `<option value="${escapeAttr(c.code || "")}">${escapeHtml(
-              c.name || c.code || ""
-            )}</option>`
-        )
-        .join("");
-    if ([...ddSub.options].some((o) => o.value === prev2)) ddSub.value = prev2;
+    if ([...dd.options].some((o) => o.value === prev)) dd.value = prev;
   }
 }
-
 
 // function renderEmployees(employees) {
 //   const arr = Array.isArray(employees) ? employees : employees?.value || [];
@@ -1575,129 +1508,14 @@ function setupThemeToggle() {
 // Try to load logo.png that was listed in controladdin Images.
 // If it fails, show the gradient "S" square as a fallback.
 function primeLogo() {
-  const img = document.getElementById("brand-logo");
-  const fb = document.getElementById("brand-fallback");
+  const img = document.getElementById('brand-logo');
+  const fb  = document.getElementById('brand-fallback');
   if (!img || !fb) return;
 
-  // Show fallback square until image loads
-  img.hidden = true;
-  fb.hidden = false;
+  // Cache-buster in case the browser keeps an old 404
+  const candidate = 'logo.png?v=' + Date.now();
 
-  img.onload = () => {
-    img.hidden = false;
-    fb.hidden = true;
-  };
-  img.onerror = () => {
-    img.hidden = true;
-    fb.hidden = false;
-  };
-
-  // logo.png must be deployed next to dashboard.js (…/Dashboard/Resources/)
-  img.src = ASSET_BASE + "logo.png?v=" + Date.now(); // cache-bust
+  img.onload  = () => { img.style.display = 'block'; fb.style.display = 'none'; };
+  img.onerror = () => { img.style.display = 'none';  fb.style.display = 'flex'; };
+  img.src = candidate;
 }
-
-// ---- Search & filter wiring for the subscription list ----
-function wireSubFilters() {
-  const search = document.getElementById("sub-search");
-  const cat    = document.getElementById("sub-filter-category");
-  const btn    = document.getElementById("sub-refresh");
-  const run    = debounce(runSubFilterNow, 300);
-
-  search?.addEventListener("input", run);
-  cat   ?.addEventListener("change", runSubFilterNow);
-  btn   ?.addEventListener("click", runSubFilterNow);
-}
-
-function runSubFilterNow() {
-  const q   = (document.getElementById("sub-search")?.value || "").trim();
-  const cat = document.getElementById("sub-filter-category")?.value || "";
-  // Ask AL for the list (it should call back renderSubscriptions below)
-  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getSubscriptions", [{ search: q, category: cat }]);
-}
-
-// Simple debounce to avoid chatty calls while typing
-function debounce(fn, ms) {
-  let t = null;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
-}
-
-function renderSubscriptions(data) {
-  const rows = Array.isArray(data) ? data : data?.value || [];
-  const tbody = document.querySelector("#sub-table tbody");
-  if (!tbody) return;
-
-  const html = rows
-    .map((r) => {
-      const no = safeStr(r.no || r.No || r.code || "");
-      const name = safeStr(r.name || r.description || r.displayName || "");
-      const cat = safeStr(
-        r.category || r.categoryCode || r.subscriptionCategory || ""
-      );
-      const stat = safeStr(r.status || r.state || "");
-      const sd = safeStr(r.startDate || r.start_date || r.start || "");
-      const ed = safeStr(r.endDate || r.end_date || r.end || "");
-      const amt =
-        r.amount !== undefined
-          ? r.amount
-          : r.price || r.monthlyAmount || r.total || 0;
-
-      return `
-      <tr data-no="${escapeAttr(no)}" data-sysid="${escapeAttr(
-        r.sysId || r.SystemId || ""
-      )}"
-          style="cursor:pointer;">
-        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
-          no
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);">${escapeHtml(
-          name
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);">${escapeHtml(
-          cat
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
-          stat
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
-          sd
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
-          ed
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);text-align:right;">${escapeHtml(
-          String(amt ?? "")
-        )}</td>
-      </tr>
-    `;
-    })
-    .join("");
-
-  tbody.innerHTML =
-    html ||
-    `<tr><td colspan="7" style="padding:12px;">No subscriptions found.</td></tr>`;
-
-  // row click -> open page 50110
-  tbody.onclick = (e) => {
-    const tr = e.target.closest("tr[data-no],tr[data-sysid]");
-    if (!tr) return;
-    const no = tr.getAttribute("data-no") || "";
-    const sysId = tr.getAttribute("data-sysid") || "";
-    if (no) {
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        "OpenSubscription:" + no,
-      ]);
-    } else if (sysId) {
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        "OpenSubscriptionSys:" + sysId,
-      ]);
-    }
-  };
-}
-
-function safeStr(v) {
-  return v === null || v === undefined ? "" : String(v);
-}
-
-// export for AL
-window.renderSubscriptions = renderSubscriptions;
-

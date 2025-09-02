@@ -62,6 +62,12 @@ page 70100 "SubsTracker Dashboard"
                 begin
                     SendSubscriptionStatistics();
                 end;
+
+                // 🔹 NEW: populate the Subscription list/grid
+                trigger getSubscriptions(Filter: JsonObject)
+                begin
+                    SendSubscriptions(Filter);
+                end;
             }
         }
     }
@@ -72,214 +78,233 @@ page 70100 "SubsTracker Dashboard"
         GLSetup: Record "General Ledger Setup";
         CompanyInfo: Record "Company Information";
 
-   local procedure HandleNavigation(PageName: Text)
-var
-    PM: Record "ST Payment Method";
-    Dept: Record "Department Master";
-    Cat: Record "Subscription Category";
-    Emp: Record "Employee Ext";
-    EntryNo: Integer;
-    OwningSection: Text;
-    NormPageName: Text;
-begin
-    // Normalize curly apostrophes (’) to straight (') for robust string matching
-    NormPageName := ConvertStr(PageName, '’', '''');
-
-    OwningSection := GetOwningSection(NormPageName);
-
-    case true of
-        NormPageName = 'Dashboard':
-            begin
-                CurrPage.Dashboard.showMainDashboard();
-                SendSubscriptionStatistics();
-            end;
-
-        NormPageName = 'Initial Setup':
-            LoadInitialSetup();
-
-        // JS renders the Subscription tiles; AL just acknowledges.
-        NormPageName = 'Subscription':
-            ;
-
-        // JS renders the Compliance tiles; AL just acknowledges.
-        NormPageName = 'Compliance':
-            ;
-
-        NormPageName = 'Notification':
-            ;
-
-        NormPageName = 'Company Information':
-            LoadCompanyInformation();
-
-        NormPageName = 'Subscription Notifications':
-            PAGE.Run(50139);
-
-        NormPageName = 'Compliance Notifications':
-            PAGE.Run(70131);
-
-        NormPageName = 'Add Subscription':
-            PAGE.Run(PAGE::"Add Subscription");
-
-        NormPageName = 'Manage Subscriptions':
-            PAGE.Run(PAGE::"Manage Subscriptions");
-
-        NormPageName = 'Active Subscriptions':
-            PAGE.Run(PAGE::"Active Subscriptions");
-
-        NormPageName = 'Inactive Subscriptions':
-            PAGE.Run(PAGE::"Inactive Subscriptions");
-
-        NormPageName = 'Renewals This Month':
-            PAGE.Run(PAGE::"Renewals This Month");
-
-        // NormPageName = 'Setup New Compliance Item':
-        //     PAGE.RunModal(PAGE::"Compliance Card");
-
-       
- NormPageName = 'Setup New Compliance Item':
- 
+    // =========================================
+    // Navigation dispatcher
+    // =========================================
+    local procedure HandleNavigation(PageName: Text)
+    var
+        PM: Record "ST Payment Method";
+        Dept: Record "Department Master";
+        Cat: Record "Subscription Category";
+        Emp: Record "Employee Ext";
+        Sub: Record "Subscription";
+        NewComp: Record "Compliance Overview";
+        EntryNo: Integer;
+        SysId: Guid;
+        SysIdTxt: Text;
+        SubNo: Code[20];
+        OwningSection: Text;
+        NormPageName: Text;
     begin
-        
-        
-            Clear(NewComp);
-            NewComp.Init();
-            // Opening a page with an uninserted record that has an empty PK
-            // usually forces Insert (New) mode on the Card page.
-            PAGE.RunModal(PAGE::"Compliance Card", NewComp);
-         
-    end;
+        // Normalize curly apostrophes (’) to straight (') for robust string matching
+        NormPageName := ConvertStr(PageName, '’', '''');
 
+        OwningSection := GetOwningSection(NormPageName);
 
-
-
-        NormPageName = 'Submit a Compliance':
-            PAGE.Run(PAGE::"Compliance List");
-
-        NormPageName = 'View Submitted Compliance':
-            PAGE.Run(PAGE::"Compliance Archive List");
-
-        NormPageName = 'Pending Compliance Submissions':
-            PAGE.Run(PAGE::"Pending Compliance List");
-
-        // IMPORTANT: straight apostrophe version
-        NormPageName = 'This Month''s Submissions':
-            PAGE.Run(PAGE::"Due This Month Compliance List");
-
-        NormPageName = 'Open Employee Ext Setup':
-            PAGE.Run(PAGE::"Employee Ext Setup");
-
-        NormPageName = 'Open Subscription Chart':
-            PAGE.Run(70157);
-
-        NormPageName = 'Open Compliance Chart':
-            PAGE.Run(PAGE::"Compliance Chart");
-
-        NormPageName = 'Auto Create All Number Series':
-            begin
-                AutoCreateAllNumberSeries();
-                LoadInitialSetup();
-            end;
-
-        NormPageName in ['Assign Manually', 'Open Initial Setup']:
-            begin
-                PAGE.RunModal(PAGE::"Initial Setup");
-                LoadInitialSetup();
-            end;
-
-        NormPageName = 'Add Department':
-            begin
-                PAGE.RunModal(PAGE::"Department Master Card");
-                SendDepartments();
-            end;
-
-        NormPageName = 'AddEmployee':
-            begin
-                PAGE.RunModal(PAGE::"Employee Ext Card");
-                SendEmployees();
-            end;
-
-        NormPageName.StartsWith('EditEmployee:'):
-            begin
-                if EvaluateTextId(NormPageName, 'EditEmployee:', Emp."No.") then begin
-                    if Emp.Get(Emp."No.") then
-                        PAGE.RunModal(PAGE::"Employee Ext Card", Emp);
-                    SendEmployees();
+        case true of
+            NormPageName = 'Dashboard':
+                begin
+                    CurrPage.Dashboard.showMainDashboard();
+                    SendSubscriptionStatistics();
                 end;
-            end;
 
-        NormPageName.StartsWith('EditDepartment:'):
-            begin
-                if EvaluateTextId(NormPageName, 'EditDepartment:', Dept.Code) then begin
-                    if Dept.Get(Dept.Code) then
-                        PAGE.RunModal(PAGE::"Department Master Card", Dept);
+            NormPageName in ['Setup & Configuration', 'Initial Setup']:
+                LoadInitialSetup();
+
+            // JS renders the Subscription tiles; AL just acknowledges.
+            NormPageName = 'Subscription':
+                ;
+
+            // JS renders the Compliance tiles; AL just acknowledges.
+            NormPageName = 'Compliance':
+                ;
+
+            NormPageName = 'Notification':
+                ;
+
+            NormPageName = 'Company Information':
+                LoadCompanyInformation();
+
+            NormPageName = 'Subscription Notifications':
+                PAGE.Run(50139);
+
+            NormPageName = 'Compliance Notifications':
+                PAGE.Run(70131);
+
+            NormPageName = 'Add Subscription':
+                PAGE.Run(PAGE::"Add Subscription");
+
+            NormPageName = 'Manage Subscriptions':
+                PAGE.Run(PAGE::"Manage Subscriptions");
+
+            NormPageName = 'Active Subscriptions':
+                PAGE.Run(PAGE::"Active Subscriptions");
+
+            NormPageName = 'Inactive Subscriptions':
+                PAGE.Run(PAGE::"Inactive Subscriptions");
+
+            NormPageName = 'Renewals This Month':
+                PAGE.Run(PAGE::"Renewals This Month");
+
+            // 🔹 NEW: open Subscription by No. from the list row
+            NormPageName.StartsWith('OpenSubscription:'):
+                begin
+                    if EvaluateTextId(NormPageName, 'OpenSubscription:', SubNo) then
+                        if Sub.Get(SubNo) then
+                            PAGE.Run(PAGE::"Add Subscription", Sub);
+                end;
+
+            // 🔹 NEW: open Subscription by SystemId (fallback)
+            NormPageName.StartsWith('OpenSubscriptionSys:'):
+                begin
+                    SysIdTxt := CopyStr(NormPageName, StrLen('OpenSubscriptionSys:') + 1);
+                    if Evaluate(SysId, SysIdTxt) then
+                        if Sub.GetBySystemId(SysId) then
+                            PAGE.Run(PAGE::"Add Subscription", Sub);
+                end;
+
+            // -- Compliance --
+            NormPageName = 'Setup New Compliance Item':
+                begin
+                    Clear(NewComp);
+                    NewComp.Init();
+                    // Opening a page with an uninserted record that has an empty PK
+                    // usually forces Insert (New) mode on the Card page.
+                    PAGE.RunModal(PAGE::"Compliance Card", NewComp);
+                end;
+
+            NormPageName = 'Submit a Compliance':
+                PAGE.Run(PAGE::"Compliance List");
+
+            NormPageName = 'View Submitted Compliance':
+                PAGE.Run(PAGE::"Compliance Archive List");
+
+            NormPageName = 'Pending Compliance Submissions':
+                PAGE.Run(PAGE::"Pending Compliance List");
+
+            // IMPORTANT: straight apostrophe version
+            NormPageName = 'This Month''s Submissions':
+                PAGE.Run(PAGE::"Due This Month Compliance List");
+
+            NormPageName = 'Open Employee Ext Setup':
+                PAGE.Run(PAGE::"Employee Ext Setup");
+
+            NormPageName = 'Open Subscription Chart':
+                PAGE.Run(70157);
+
+            NormPageName = 'Open Compliance Chart':
+                PAGE.Run(PAGE::"Compliance Chart");
+
+            NormPageName = 'Auto Create All Number Series':
+                begin
+                    AutoCreateAllNumberSeries();
+                    LoadInitialSetup();
+                end;
+
+            NormPageName in ['Assign Manually', 'Open Initial Setup', 'Open Setup & Configuration']:
+                begin
+                    PAGE.RunModal(PAGE::"Initial Setup");
+                    LoadInitialSetup();
+                end;
+
+            NormPageName = 'Add Department':
+                begin
+                    PAGE.RunModal(PAGE::"Department Master Card");
                     SendDepartments();
                 end;
-            end;
 
-        NormPageName = 'Add Subscription Categories':
-            begin
-                PAGE.RunModal(PAGE::"Subscription Categories");
-                SendSubscriptionCategories();
-            end;
+            NormPageName = 'AddEmployee':
+                begin
+                    PAGE.RunModal(PAGE::"Employee Ext Card");
+                    SendEmployees();
+                end;
 
-        NormPageName.StartsWith('EditSubscriptionCategory:'):
-            begin
-                if EvaluateTextId(NormPageName, 'EditSubscriptionCategory:', Cat.Code) then begin
-                    if Cat.Get(Cat.Code) then
-                        PAGE.RunModal(PAGE::"Subscription Categories", Cat);
+            NormPageName.StartsWith('EditEmployee:'):
+                begin
+                    if EvaluateTextId(NormPageName, 'EditEmployee:', Emp."No.") then begin
+                        if Emp.Get(Emp."No.") then
+                            PAGE.RunModal(PAGE::"Employee Ext Card", Emp);
+                        SendEmployees();
+                    end;
+                end;
+
+            NormPageName.StartsWith('EditDepartment:'):
+                begin
+                    if EvaluateTextId(NormPageName, 'EditDepartment:', Dept.Code) then begin
+                        if Dept.Get(Dept.Code) then
+                            PAGE.RunModal(PAGE::"Department Master Card", Dept);
+                        SendDepartments();
+                    end;
+                end;
+
+            NormPageName = 'Add Subscription Categories':
+                begin
+                    PAGE.RunModal(PAGE::"Subscription Categories");
                     SendSubscriptionCategories();
                 end;
-            end;
 
-        NormPageName = 'Manage Payment Methods':
-            begin
-                PAGE.RunModal(PAGE::"ST Payment Methods");
-                SendPaymentMethods();
-            end;
+            NormPageName.StartsWith('EditSubscriptionCategory:'):
+                begin
+                    if EvaluateTextId(NormPageName, 'EditSubscriptionCategory:', Cat.Code) then begin
+                        if Cat.Get(Cat.Code) then
+                            PAGE.RunModal(PAGE::"Subscription Categories", Cat);
+                        SendSubscriptionCategories();
+                    end;
+                end;
 
-        NormPageName.StartsWith('EditPaymentMethod:'):
-            begin
-                if EvaluateEntryNo(NormPageName, EntryNo) then begin
-                    if PM.Get(EntryNo) then
-                        PAGE.RunModal(PAGE::"ST Payment Method Card", PM);
+            NormPageName = 'Manage Payment Methods':
+                begin
+                    PAGE.RunModal(PAGE::"ST Payment Methods");
                     SendPaymentMethods();
                 end;
-            end;
 
-        else
-            ;
+            NormPageName.StartsWith('EditPaymentMethodSys:'):
+                begin
+                    SysIdTxt := CopyStr(NormPageName, StrLen('EditPaymentMethodSys:') + 1);
+                    if Evaluate(SysId, SysIdTxt) then begin
+                        if PM.GetBySystemId(SysId) then
+                            PAGE.RunModal(PAGE::"ST Payment Method Card", PM);
+                        SendPaymentMethods();
+                    end;
+                end;
+        end;
+
+        if OwningSection <> '' then
+            CurrPage.Dashboard.setActiveNavigation(OwningSection);
     end;
 
-    if OwningSection <> '' then
-        CurrPage.Dashboard.setActiveNavigation(OwningSection);
-end;
-
-var
-            NewComp: Record "Compliance Overview";
-
-
+    // =========================================
+    // Helpers
+    // =========================================
     local procedure GetOwningSection(PageName: Text): Text
-var
-    P: Text;
-begin
-    // Normalize curly apostrophes to straight apostrophes
-    P := ConvertStr(PageName, '’', '''');
+    var
+        P: Text;
+    begin
+        // Normalize curly apostrophes to straight apostrophes
+        P := ConvertStr(PageName, '’', '''');
 
-    if P in ['Dashboard', 'Open Subscription Chart'] then
-        exit('Dashboard');
-    if P in ['Initial Setup', 'Auto Create All Number Series', 'Assign Manually', 'Open Initial Setup', 'Manage Payment Methods'] then
-        exit('Initial Setup');
-    if (P = 'Company Information') or (P = 'Add Department') or (P = 'AddEmployee') or (P = 'Add Subscription Categories') or P.StartsWith('Edit') then
-        exit('Company Information');
-    if P in ['Compliance', 'Open Compliance Chart', 'Submit a Compliance', 'View Submitted Compliance', 'Pending Compliance Submissions', 'This Month''s Submissions', 'Setup New Compliance Item'] then
-        exit('Compliance');
-    if P in ['Subscription', 'Add Subscription', 'Manage Subscriptions', 'Active Subscriptions', 'Inactive Subscriptions', 'Renewals This Month'] then
-        exit('Subscription');
-    if P in ['Notification', 'Subscription Notifications', 'Compliance Notifications'] then
-        exit('Notification');
-    exit('');
-end;
-
+        if P in ['Dashboard', 'Open Subscription Chart'] then
+            exit('Dashboard');
+        if P in [
+            'Setup & Configuration',
+            'Initial Setup',
+            'Auto Create All Number Series',
+            'Assign Manually',
+            'Open Setup & Configuration',
+            'Open Initial Setup',
+            'Manage Payment Methods'
+        ] then
+            exit('Setup & Configuration');
+        if (P = 'Company Information') or (P = 'Add Department') or (P = 'AddEmployee') or (P = 'Add Subscription Categories') or P.StartsWith('Edit') then
+            exit('Company Information');
+        if P in ['Compliance', 'Open Compliance Chart', 'Submit a Compliance', 'View Submitted Compliance', 'Pending Compliance Submissions', 'This Month''s Submissions', 'Setup New Compliance Item'] then
+            exit('Compliance');
+        if P in ['Subscription', 'Add Subscription', 'Manage Subscriptions', 'Active Subscriptions', 'Inactive Subscriptions', 'Renewals This Month'] then
+            exit('Subscription');
+        if P in ['Notification', 'Subscription Notifications', 'Compliance Notifications'] then
+            exit('Notification');
+        exit('');
+    end;
 
     local procedure EvaluateEntryNo(PageName: Text; var EntryNo: Integer): Boolean
     var
@@ -298,6 +323,9 @@ end;
         exit(OutId <> '');
     end;
 
+    // =========================================
+    // Subscription KPI summary (existing)
+    // =========================================
     local procedure SendSubscriptionStatistics()
     var
         Sub: Record "Subscription";
@@ -366,6 +394,70 @@ end;
         CurrPage.Dashboard.renderSubscriptionStatistics(Stats);
     end;
 
+    // =========================================
+    // 🔹 NEW: Send filtered Subscription rows to JS grid
+    // =========================================
+  local procedure SendSubscriptions(Filter: JsonObject)
+var
+    Sub: Record "Subscription";
+    Arr: JsonArray;
+    Obj: JsonObject;
+    Tok: JsonToken;
+    SearchTxt: Text;
+    SearchU: Text;
+    CatCode: Code[20];
+    NameU: Text;
+    NoU: Text;
+    Match: Boolean;
+begin
+    // Read filters from JS: { search: Text; category: Code }
+    SearchTxt := '';
+    CatCode := '';
+
+    if Filter.Get('search', Tok) then
+        SearchTxt := Tok.AsValue().AsText();
+
+    if Filter.Get('category', Tok) then
+        CatCode := CopyStr(Tok.AsValue().AsText(), 1, MaxStrLen(CatCode));
+
+    SearchU := UpperCase(SearchTxt);
+
+    // Query table 50110 directly (optionally by Category)
+    Sub.Reset();
+    if CatCode <> '' then
+        Sub.SetRange("Category Code", CatCode);
+
+    if Sub.FindSet() then
+        repeat
+            if SearchU = '' then
+                Match := true
+            else begin
+                NameU := UpperCase(Sub."Service Name");
+                NoU := UpperCase(Format(Sub."No."));
+                Match := (StrPos(NameU, SearchU) > 0) or (StrPos(NoU, SearchU) > 0);
+            end;
+
+            if Match then begin
+                Clear(Obj);
+                Obj.Add('no', Sub."No.");
+                Obj.Add('name', Sub."Service Name");
+                Obj.Add('category', Sub."Category Code");
+                Obj.Add('status', Format(Sub.Status));
+                Obj.Add('startDate', Format(Sub."Start Date"));
+                Obj.Add('endDate', Format(Sub."End Date"));
+                Obj.Add('amount', Sub."Amount in LCY");
+                Obj.Add('sysId', Format(Sub.SystemId));
+                Arr.Add(Obj);
+            end;
+        until Sub.Next() = 0;
+
+    CurrPage.Dashboard.renderSubscriptions(Arr);
+end;
+
+
+    // =========================================
+    // Compliance Statistics (existing)
+    // =========================================
     local procedure SendComplianceStatistics()
     var
         ComplianceRec: Record "Compliance Overview";
@@ -465,6 +557,9 @@ end;
         CurrPage.Dashboard.renderComplianceStatistics(Stats);
     end;
 
+    // =========================================
+    // Payment Methods / Departments / Employees / Categories (existing)
+    // =========================================
     local procedure SavePaymentMethod(MethodData: JsonObject)
     var
         PM: Record "ST Payment Method";
@@ -479,12 +574,11 @@ end;
 
         if MethodData.Get('type', Tok) then
             case LowerCase(Tok.AsValue().AsText()) of
-                'Credit Card': PM.Type := PM.Type::"Credit Card";
-                'Debit Card': PM.Type := PM.Type::"Debit Card";
-                'Bank Transfer': PM.Type := PM.Type::"Bank Transfer";
-                'Cash': PM.Type := PM.Type::Cash;
-                'Digital Wallet': PM.Type := PM.Type::"Digital Wallet";
-                
+                'credit card':    PM.Type := PM.Type::"Credit Card";
+                'debit card':     PM.Type := PM.Type::"Debit Card";
+                'bank transfer':  PM.Type := PM.Type::"Bank Transfer";
+                'cash':           PM.Type := PM.Type::Cash;
+                'digital wallet': PM.Type := PM.Type::"Digital Wallet";
             end;
 
         if MethodData.Get('description', Tok) then
@@ -519,6 +613,7 @@ end;
             repeat
                 Clear(Obj);
                 Obj.Add('id', PM."Entry No.");
+                Obj.Add('sysId', Format(PM.SystemId)); // GUID fallback
                 Obj.Add('title', PM."Title");
                 Obj.Add('type', Format(PM."Type"));
                 Obj.Add('description', PM."Description");
@@ -588,6 +683,9 @@ end;
         CurrPage.Dashboard.renderSubscriptionCategories(Arr);
     end;
 
+    // =========================================
+    // Utilities
+    // =========================================
     local procedure LoadCompanyInformation()
     var
         CompanyData: JsonObject;
@@ -673,8 +771,9 @@ end;
         JAddress: JsonObject;
         Base64Convert: Codeunit "Base64 Convert";
         TempBlob: Codeunit "Temp Blob";
-        OutStr: OutStream;
+        OutStrTmp: OutStream;
         InStr: InStream;
+        MediaOut: OutStream;
         LogoBase64: Text;
         JToken: JsonToken;
     begin
@@ -688,11 +787,12 @@ end;
             if JGeneral.Get('logoBase64', JToken) then begin
                 LogoBase64 := JToken.AsValue().AsText();
                 if LogoBase64 <> '' then begin
-                    TempBlob.CreateOutStream(OutStr);
-                    Base64Convert.FromBase64(LogoBase64, OutStr);
+                    // Decode to TempBlob -> copy into Media (Picture)
+                    TempBlob.CreateOutStream(OutStrTmp);
+                    Base64Convert.FromBase64(LogoBase64, OutStrTmp);
                     TempBlob.CreateInStream(InStr);
-                    CompanyInfo.Picture.CreateOutStream(OutStr);
-                    CopyStream(OutStr, InStr);
+                    CompanyInfo.Picture.CreateOutStream(MediaOut);
+                    CopyStream(MediaOut, InStr);
                 end;
             end;
         end;
@@ -808,41 +908,39 @@ end;
         EmpSetup.Modify(true);
     end;
 
-local procedure ParseIsoDate(DateTxt: Text; var OutDate: Date): Boolean
-var
-    Y: Integer;
-    M: Integer;
-    D: Integer;
-    Parts: List of [Text];
-    TY: Text;
-    TM: Text;
-    TD: Text;
-begin
-    OutDate := 0D;
-    if DateTxt = '' then
-        exit(false);
+    local procedure ParseIsoDate(DateTxt: Text; var OutDate: Date): Boolean
+    var
+        Y: Integer;
+        M: Integer;
+        D: Integer;
+        Parts: List of [Text];
+        TY: Text;
+        TM: Text;
+        TD: Text;
+    begin
+        OutDate := 0D;
+        if DateTxt = '' then
+            exit(false);
 
-    // Instance method: Split on the *value* (not on the Text type)
-    Parts := DateTxt.Split('-');  // returns List of [Text]
-    if Parts.Count() <> 3 then
-        exit(false);
+        Parts := DateTxt.Split('-');
+        if Parts.Count() <> 3 then
+            exit(false);
 
-    TY := Parts.Get(1);
-    TM := Parts.Get(2);
-    TD := Parts.Get(3);
+        TY := Parts.Get(1);
+        TM := Parts.Get(2);
+        TD := Parts.Get(3);
 
-    if not Evaluate(Y, TY) then
-        exit(false);
-    if not Evaluate(M, TM) then
-        exit(false);
-    if not Evaluate(D, TD) then
-        exit(false);
+        if not Evaluate(Y, TY) then
+            exit(false);
+        if not Evaluate(M, TM) then
+            exit(false);
+        if not Evaluate(D, TD) then
+            exit(false);
 
-    if (Y = 0) or (M = 0) or (D = 0) then
-        exit(false);
+        if (Y = 0) or (M = 0) or (D = 0) then
+            exit(false);
 
-    OutDate := DMY2DATE(D, M, Y);
-    exit(OutDate <> 0D);
-end;
-
+        OutDate := DMY2DATE(D, M, Y);
+        exit(OutDate <> 0D);
+    end;
 }
