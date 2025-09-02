@@ -68,6 +68,12 @@ page 70100 "SubsTracker Dashboard"
                 begin
                     SendSubscriptions(Filter);
                 end;
+
+                trigger getCompliances(Filter: JsonObject)
+begin
+    SendCompliances(Filter);
+end;
+
             }
         }
     }
@@ -95,6 +101,11 @@ page 70100 "SubsTracker Dashboard"
         SubNo: Code[20];
         OwningSection: Text;
         NormPageName: Text;
+        Comp: Record "Compliance Overview";
+CompId: Code[20];
+NewSub: Record "Subscription";
+
+
     begin
         // Normalize curly apostrophes (’) to straight (') for robust string matching
         NormPageName := ConvertStr(PageName, '’', '''');
@@ -131,8 +142,16 @@ page 70100 "SubsTracker Dashboard"
             NormPageName = 'Compliance Notifications':
                 PAGE.Run(70131);
 
-            NormPageName = 'Add Subscription':
-                PAGE.Run(PAGE::"Add Subscription");
+            // NormPageName = 'Add Subscription':
+            //     PAGE.Run(PAGE::"Add Subscription");
+NormPageName = 'Add Subscription':
+begin
+    Clear(NewSub);
+    NewSub.Init();
+    NewSub.Insert(true);
+    PAGE.Run(PAGE::"Add Subscription", NewSub);
+end;
+
 
             NormPageName = 'Manage Subscriptions':
                 PAGE.Run(PAGE::"Manage Subscriptions");
@@ -166,12 +185,11 @@ page 70100 "SubsTracker Dashboard"
             // -- Compliance --
             NormPageName = 'Setup New Compliance Item':
                 begin
-                    Clear(NewComp);
-                    NewComp.Init();
-                    // Opening a page with an uninserted record that has an empty PK
-                    // usually forces Insert (New) mode on the Card page.
-                    PAGE.RunModal(PAGE::"Compliance Card", NewComp);
-                end;
+    Clear(NewComp);
+    NewComp.Init();
+    NewComp.Insert(true);
+    PAGE.Run(PAGE::"Compliance Card", NewComp); // New mode
+end;
 
             NormPageName = 'Submit a Compliance':
                 PAGE.Run(PAGE::"Compliance List");
@@ -257,6 +275,29 @@ page 70100 "SubsTracker Dashboard"
                     PAGE.RunModal(PAGE::"ST Payment Methods");
                     SendPaymentMethods();
                 end;
+// --- open by Compliance ID (from table 70101 "Compliance Overview") ---
+NormPageName.StartsWith('OpenCompliance:'):
+begin
+    if EvaluateTextId(NormPageName, 'OpenCompliance:', CompId) then begin
+        // Find by "Compliance ID" (non-PK) and open its card
+        Comp.Reset();
+        Comp.SetRange("Compliance ID", CompId);
+        if Comp.FindFirst() then
+            PAGE.Run(PAGE::"Compliance Card", Comp)
+        else
+            Message('Compliance "%1" was not found.', CompId);
+    end;
+end;
+
+// --- open by SystemId (fallback) ---
+NormPageName.StartsWith('OpenComplianceSys:'):
+begin
+    SysIdTxt := CopyStr(NormPageName, StrLen('OpenComplianceSys:') + 1);
+    if Evaluate(SysId, SysIdTxt) then
+        if Comp.GetBySystemId(SysId) then
+            PAGE.Run(PAGE::"Compliance Card", Comp);
+end;
+
 
             NormPageName.StartsWith('EditPaymentMethodSys:'):
                 begin
@@ -454,108 +495,175 @@ begin
     CurrPage.Dashboard.renderSubscriptions(Arr);
 end;
 
+    // =========================================
+    // 🔹 NEW: Send filtered Compliance rows to JS grid
+    // =========================================
+local procedure SendCompliances(Filter: JsonObject)
+var
+    Comp: Record "Compliance Overview";  // table 70101
+    Arr: JsonArray;
+    Obj: JsonObject;
+    Tok: JsonToken;
+    SearchTxt: Text;
+    SearchU: Text;
+    NameU: Text;
+    IdU: Text;
+begin
+    // Parse filter from JS: { search: Text }
+    SearchTxt := '';
+    if Filter.Get('search', Tok) then
+        SearchTxt := Tok.AsValue().AsText();
+    SearchU := UpperCase(SearchTxt);
+
+    // Read 70101 and match (Compliance Name OR Compliance ID)
+    Comp.Reset();
+    if Comp.FindSet() then
+        repeat
+            if SearchU = '' then begin
+                // include all
+                Clear(Obj);
+                Obj.Add('no', Comp."Compliance ID");
+                Obj.Add('name', Comp."Compliance Name");
+                Obj.Add('status', Format(Comp.Status));
+                Obj.Add('dueDate', Format(Comp."Filing Due Date"));
+                Obj.Add('amount', Comp."Payable Amount");
+                Obj.Add('sysId', Format(Comp.SystemId));
+                Arr.Add(Obj);
+            end else begin
+                NameU := UpperCase(Comp."Compliance Name");
+                IdU := UpperCase(Format(Comp."Compliance ID"));
+                if (StrPos(NameU, SearchU) > 0) or (StrPos(IdU, SearchU) > 0) then begin
+                    Clear(Obj);
+                    Obj.Add('no', Comp."Compliance ID");
+                    Obj.Add('name', Comp."Compliance Name");
+                    Obj.Add('status', Format(Comp.Status));
+                    Obj.Add('dueDate', Format(Comp."Filing Due Date"));
+                    Obj.Add('amount', Comp."Payable Amount");
+                    Obj.Add('sysId', Format(Comp.SystemId));
+                    Arr.Add(Obj);
+                end;
+            end;
+        until Comp.Next() = 0;
+
+    CurrPage.Dashboard.renderCompliances(Arr);
+end;
 
     // =========================================
     // Compliance Statistics (existing)
     // =========================================
     local procedure SendComplianceStatistics()
-    var
-        ComplianceRec: Record "Compliance Overview";
-        ArchiveRec: Record "Compliance Overview Archive";
-        Stats: JsonObject;
-        PendingCount: Integer;
-        ActiveCount: Integer;
-        FromDate: Date;
-        ToDate: Date;
-        SumAmt: Decimal;
-        UseSift: Boolean;
-    begin
-        ComplianceRec.Reset();
-        PendingCount := ComplianceRec.Count;
+var
+    ComplianceRec: Record "Compliance Overview";
+    ArchiveRec: Record "Compliance Overview Archive";
+    Stats: JsonObject;
+    PendingCount: Integer;
+    ActiveCount: Integer;
+    FromDate: Date;
+    ToDate: Date;
+    SumAmt: Decimal;
+    UseSift: Boolean;
+begin
+    // Pending = count of all current items
+    ComplianceRec.Reset();
+    PendingCount := ComplianceRec.Count;
 
-        ArchiveRec.Reset();
-        ActiveCount := ArchiveRec.Count;
+    // ---- CURRENT YEAR BOUNDS ----
+    FromDate := DMY2DATE(1, 1, Date2DMY(Today(), 3));
+    ToDate := DMY2DATE(31, 12, Date2DMY(Today(), 3));
 
-        FromDate := DMY2DATE(1, 1, Date2DMY(Today(), 3));
-        ToDate := DMY2DATE(31, 12, Date2DMY(Today(), 3));
+    // Apply range ONCE and reuse for both ActiveCount and yearly sum
+    ArchiveRec.Reset();
+    ArchiveRec.SetRange("File Submitted", FromDate, ToDate);
 
-        ArchiveRec.Reset();
+    // ✅ Active = archive rows submitted in the current year
+    ActiveCount := ArchiveRec.Count;
+
+    // Yearly amount sum (same filtered set)
+    UseSift := false;
+    if UseSift then begin
+        ArchiveRec.CalcSums("Payable Amount");
+        SumAmt := ArchiveRec."Payable Amount";
+    end else begin
+        SumAmt := 0;
+        if ArchiveRec.FindSet() then
+            repeat
+                SumAmt += ArchiveRec."Payable Amount";
+            until ArchiveRec.Next() = 0;
+    end;
+
+    Stats.Add('yearly', SumAmt);
+    Stats.Add('total', SumAmt);
+    Stats.Add('active', ActiveCount);
+    Stats.Add('pending', PendingCount);
+    if GLSetup.Get() then
+        Stats.Add('lcy', GLSetup."LCY Code")
+    else
+        Stats.Add('lcy', '');
+
+    CurrPage.Dashboard.renderComplianceStatistics(Stats);
+end;
+
+
+   local procedure SendComplianceStatisticsWithRange(FromDateTxt: Text; ToDateTxt: Text)
+var
+    ComplianceRec: Record "Compliance Overview";
+    ArchiveRec: Record "Compliance Overview Archive";
+    Stats: JsonObject;
+    PendingCount: Integer;
+    ActiveCount: Integer;
+    FromDate: Date;
+    ToDate: Date;
+    SumAmt: Decimal;
+    UseSift: Boolean;
+    CurrYearFrom: Date;
+    CurrYearTo: Date;
+begin
+    // Parse optional range (used for amount only)
+    if not ParseIsoDate(FromDateTxt, FromDate) then
+        FromDate := 0D;
+    if not ParseIsoDate(ToDateTxt, ToDate) then
+        ToDate := 0D;
+
+    // Pending = count of all current items
+    ComplianceRec.Reset();
+    PendingCount := ComplianceRec.Count;
+
+    // ✅ Active = current-year archive count (ignore incoming range)
+    CurrYearFrom := DMY2DATE(1, 1, Date2DMY(Today(), 3));
+    CurrYearTo := DMY2DATE(31, 12, Date2DMY(Today(), 3));
+    ArchiveRec.Reset();
+    ArchiveRec.SetRange("File Submitted", CurrYearFrom, CurrYearTo);
+    ActiveCount := ArchiveRec.Count;
+
+    // Amount sum — keep honoring the passed range (or all if none supplied)
+    ArchiveRec.Reset();
+    if (FromDate <> 0D) or (ToDate <> 0D) then
         ArchiveRec.SetRange("File Submitted", FromDate, ToDate);
 
-        UseSift := false;
-        if UseSift then begin
-            ArchiveRec.CalcSums("Payable Amount");
-            SumAmt := ArchiveRec."Payable Amount";
-        end else begin
-            SumAmt := 0;
-            if ArchiveRec.FindSet() then
-                repeat
-                    SumAmt += ArchiveRec."Payable Amount";
-                until ArchiveRec.Next() = 0;
-        end;
-
-        Stats.Add('yearly', SumAmt);
-        Stats.Add('total', SumAmt);
-        Stats.Add('active', ActiveCount);
-        Stats.Add('pending', PendingCount);
-        if GLSetup.Get() then
-            Stats.Add('lcy', GLSetup."LCY Code")
-        else
-            Stats.Add('lcy', '');
-
-        CurrPage.Dashboard.renderComplianceStatistics(Stats);
+    UseSift := false;
+    if UseSift then begin
+        ArchiveRec.CalcSums("Payable Amount");
+        SumAmt := ArchiveRec."Payable Amount";
+    end else begin
+        SumAmt := 0;
+        if ArchiveRec.FindSet() then
+            repeat
+                SumAmt += ArchiveRec."Payable Amount";
+            until ArchiveRec.Next() = 0;
     end;
 
-    local procedure SendComplianceStatisticsWithRange(FromDateTxt: Text; ToDateTxt: Text)
-    var
-        ComplianceRec: Record "Compliance Overview";
-        ArchiveRec: Record "Compliance Overview Archive";
-        Stats: JsonObject;
-        PendingCount: Integer;
-        ActiveCount: Integer;
-        FromDate: Date;
-        ToDate: Date;
-        SumAmt: Decimal;
-        UseSift: Boolean;
-    begin
-        if not ParseIsoDate(FromDateTxt, FromDate) then
-            FromDate := 0D;
-        if not ParseIsoDate(ToDateTxt, ToDate) then
-            ToDate := 0D;
+    Stats.Add('yearly', SumAmt);
+    Stats.Add('total', SumAmt);
+    Stats.Add('active', ActiveCount);
+    Stats.Add('pending', PendingCount);
+    if GLSetup.Get() then
+        Stats.Add('lcy', GLSetup."LCY Code")
+    else
+        Stats.Add('lcy', '');
 
-        ComplianceRec.Reset();
-        PendingCount := ComplianceRec.Count;
+    CurrPage.Dashboard.renderComplianceStatistics(Stats);
+end;
 
-        ArchiveRec.Reset();
-        ActiveCount := ArchiveRec.Count;
-
-        ArchiveRec.Reset();
-        if (FromDate <> 0D) or (ToDate <> 0D) then
-            ArchiveRec.SetRange("File Submitted", FromDate, ToDate);
-
-        UseSift := false;
-        if UseSift then begin
-            ArchiveRec.CalcSums("Payable Amount");
-            SumAmt := ArchiveRec."Payable Amount";
-        end else begin
-            SumAmt := 0;
-            if ArchiveRec.FindSet() then
-                repeat
-                    SumAmt += ArchiveRec."Payable Amount";
-                until ArchiveRec.Next() = 0;
-        end;
-
-        Stats.Add('yearly', SumAmt);
-        Stats.Add('total', SumAmt);
-        Stats.Add('active', ActiveCount);
-        Stats.Add('pending', PendingCount);
-        if GLSetup.Get() then
-            Stats.Add('lcy', GLSetup."LCY Code")
-        else
-            Stats.Add('lcy', '');
-
-        CurrPage.Dashboard.renderComplianceStatistics(Stats);
-    end;
 
     // =========================================
     // Payment Methods / Departments / Employees / Categories (existing)

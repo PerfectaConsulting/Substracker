@@ -579,30 +579,24 @@ select:focus {
   justify-content: center;
 
   /* Try image first, then fallback gradient */
-  background-image: url("logo.png"), var(--gradient-1);
+  background-image: url("logo.png"), var(--grad-primary);
   background-size: cover, cover;
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
-
+  background-color: whitesmoke;
   /* hide any text node (e.g., old "S") */
   color: transparent;
   font-size: 0;
 }
+
 .logo-img {
-  width: 56px;
-  height: 56px;
-  margin-right: 15px;
-  border-radius: 12px;
-  object-fit: cover; /* contain if your logo has transparency */
-  display: block;
-}
-.logo-img {
-  width: 56px;
-  height: 56px;
+  width: 70px;
+  height: 60px;
   margin-right: 12px;
   border-radius: 12px;
   object-fit: cover;
   display: block;
+  background-color: transparent;
 }
 .brand {
   display: flex;
@@ -610,17 +604,20 @@ select:focus {
   align-items: baseline;
   white-space: nowrap;
 }
-.logo-img{
-  width:56px; height:56px;
-  border-radius:12px;
-  object-fit:cover;
-  display:none;          /* start hidden until it loads */
-  margin-right:12px;
+
+.logo-icon {
+  /* your existing fallback square */
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
 }
-.logo-icon{             /* your existing fallback square */
-  width:56px; height:56px;
-  border-radius:12px;
-  display:flex; align-items:center; justify-content:center;
-  margin-right:12px;
+.logo .brand {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  white-space: nowrap;
 }
-.logo .brand{ display:flex; gap:6px; align-items:baseline; white-space:nowrap; }

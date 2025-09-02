@@ -92,9 +92,9 @@ function getShellHTML() {
       <aside class="sidebar">
         <div class="logo">
   <img id="brand-logo" class="logo-img" alt="SubsTracker logo" hidden>
-  <div id="brand-fallback" class="logo-icon" aria-hidden="true">S</div>
+  <div id="brand-fallback" class="logo-icon" aria-hidden="true"> </div>
   <span class="brand">
-    <span class="brand-left">Subs</span><span class="brand-right">Tracker</span>
+    <span class="brand-left">SubsTracker</span>
   </span>
 </div>
 
@@ -561,23 +561,6 @@ function renderSubscriptionStatistics(stats) {
   if (tInactive) tInactive.textContent = safeInt(s.inactive);
 }
 
-function renderComplianceStatistics(stats) {
-  const s = stats || {};
-  const cur = s.lcy || "";
-
-  const yearlyEl = document.getElementById("stat-yearly");
-  const activeEl = document.getElementById("stat-active");
-  const pendingEl = document.getElementById("stat-pending");
-
-  if (!yearlyEl || !activeEl || !pendingEl) return;
-
-  yearlyEl.textContent = normalizeDash(
-    formatCurrency(s.yearly ?? s.total, cur)
-  );
-  activeEl.textContent = safeInt(s.active);
-  pendingEl.textContent = safeInt(s.pending);
-}
-
 /* =========================
    7) Polling Manager
    ========================= */
@@ -621,10 +604,10 @@ function miniTile(label, emoji) {
   return `
     <button data-label="${escapeAttr(label)}"
             style="
-              width:4cm;height:1cm;
+              width:6.5cm;height:1.3cm;
               display:inline-flex;align-items:center;justify-content:center;gap:8px;
               border:1px solid var(--border);border-radius:10px;
-              background:var(--panel);color:var(--text-1);font-weight:700;">
+              background:var(--panel);color:var(--text-1);font-weight:700;font-size:0.45cm">
       <span aria-hidden="true">${emoji}</span>
       <span>${escapeHtml(label)}</span>
     </button>
@@ -647,7 +630,7 @@ function showSubscriptionButtons() {
 
     <!-- 5 compact tiles in one row (4cm x 1cm) -->
     <div id="sub-quick-actions"
-         style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 14px 0;">
+         "display:flex;gap:10px;align-items:center;flex-wrap:nowrap;overflow:auto;margin:8px 0 12px 0;">
       ${miniTile("Add Subscription", "✨")}
       ${miniTile("Manage Subscriptions", "⚙️")}
       ${miniTile("Active Subscriptions", "✅")}
@@ -714,15 +697,13 @@ function showComplianceButtons() {
   const main = document.querySelector(".main-content");
   if (!main) return;
 
+  // One row KPI (already rendered via renderComplianceStatistics)
   main.innerHTML = `
     <div id="compliance-stats-container">
-      <div class="stats-container">
-        <div class="stat-box purple">
-          <div class="stat-label">Total (This Year)</div>
-          <div id="stat-yearly" class="stat-value">—</div>
-        </div>
+      <div class="stats-container" style="margin-bottom:10px">
+       
         <div class="stat-box green">
-          <div class="stat-label">Active</div>
+          <div class="stat-label">Annual Active </div>
           <div id="stat-active" class="stat-value">0</div>
         </div>
         <div class="stat-box yellow">
@@ -732,72 +713,166 @@ function showComplianceButtons() {
       </div>
     </div>
 
-    <div class="subscription-grid">
-      ${createSubscriptionCard(
-        "Setup New Compliance Item",
-        "Add Compliance items",
-        "✨"
-      )}
-      ${createSubscriptionCard(
-        "Submit a Compliance",
-        "Add or submit compliance data",
-        "🗂️"
-      )}
-      ${createSubscriptionCard(
-        "View Submitted Compliance",
-        "See all compliance entries which were submitted",
-        "📬"
-      )}
-      ${createSubscriptionCard(
-        "Pending Compliance Submissions",
-        "Check compliance items that are pending",
-        "⏳"
-      )}
-      ${createSubscriptionCard(
-        "This Month's Submissions",
-        "Track all submissions made this month",
-        "📆"
-      )}
+    <!-- Compact action tiles (one row, 4cm x 3cm) -->
+    <div id="comp-tiles" style="display:flex;gap:10px;align-items:center;flex-wrap:nowrap;overflow:auto;margin:8px 0 12px 0;">
+      ${cmTile("Setup New Compliance Item", "✨")}
+      ${cmTile("Submit a Compliance", "🗂️")}
+      ${cmTile("View Submitted Compliance", "📬")}
+      ${cmTile("Pending Compliance Submissions", "⏳")}
+      ${cmTile("This Month's Submissions", "📆")}
+    </div>
+
+    <!-- Search -->
+    <div id="comp-filter-bar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 12px 0;">
+      <input id="comp-search" type="search" placeholder="Search by Compliance Name or Compliance ID"
+             style="flex:1 1 420px;min-width:280px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text)">
+      <button id="comp-search-btn" class="btn" type="button">Search</button>
+    </div>
+
+    <!-- Table -->
+    <div id="comp-list-container" style="overflow:auto;border-radius:12px;border:1px solid var(--border);">
+      <table id="comp-table" style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:var(--panel-soft);color:var(--text-1);text-align:left;">
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Compliance ID</th>
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border);">Compliance Name</th>
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Status</th>
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Filing Due Date</th>
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:right;">Payable Amount</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   `;
 
-  // Card clicks -> AL navigation
-  document
-    .querySelector(".subscription-grid")
-    ?.addEventListener("click", (e) => {
-      const card = e.target.closest(".subscription-card[data-label]");
-      if (!card) return;
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        card.getAttribute("data-label"),
-      ]);
-    });
+  // Action tiles -> AL navigation
+  document.getElementById("comp-tiles")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-label]");
+    if (!btn) return;
+    Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+      btn.getAttribute("data-label"),
+    ]);
+  });
 
-  animateCards();
-
-  // Start/refresh polling for compliance KPIs
+  // Poll KPIs like before
   Poller.stop("sub");
   Poller.start("comp", requestComplianceStats);
+
+  // Search wiring
+  wireCompSearch();
+  runCompSearchNow(); // initial load
 }
+
+// fixed-size tile (4cm x 3cm)
+function cmTile(label, emoji) {
+  return `
+    <button data-label="${escapeAttr(label)}"
+            style="
+              width:6.5cm;height:1.5cm;
+              display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+              border:1px solid var(--border);border-radius:10px;
+              background:var(--panel);color:var(--text-1);font-weight:700;font-size:0.6cm">
+      <span aria-hidden="true" style="font-size:18px;line-height:1">${emoji}</span>
+      <span style="font-size:12px;text-align:center">${escapeHtml(label)}</span>
+    </button>
+  `;
+}
+function wireCompSearch() {
+  const search = document.getElementById("comp-search");
+  const btn = document.getElementById("comp-search-btn");
+  const run = debounce(runCompSearchNow, 300);
+  search?.addEventListener("input", run);
+  btn?.addEventListener("click", runCompSearchNow);
+}
+
+function runCompSearchNow() {
+  const q = (document.getElementById("comp-search")?.value || "").trim();
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getCompliances", [
+    { search: q },
+  ]);
+}
+function renderCompliances(data) {
+  const rows = Array.isArray(data) ? data : data?.value || [];
+  const tbody = document.querySelector("#comp-table tbody");
+  if (!tbody) return;
+
+  const html = rows
+    .map((r) => {
+      const id = safeStr(r.no || r.id || r.complianceId || "");
+      const name = safeStr(r.name || r.complianceName || "");
+      const status = safeStr(r.status || "");
+      const due = safeStr(r.dueDate || "");
+      const amt = r.amount !== undefined ? r.amount : r.payableAmount || 0;
+
+      return `
+      <tr data-no="${escapeAttr(id)}" data-sysid="${escapeAttr(r.sysId || "")}"
+          style="cursor:pointer;">
+        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+          id
+        )}</td>
+        <td style="padding:8px 12px;border-top:1px solid var(--border);">${escapeHtml(
+          name
+        )}</td>
+        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+          status
+        )}</td>
+        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+          due
+        )}</td>
+        <td style="padding:8px 12px;border-top:1px solid var(--border);text-align:right;">${escapeHtml(
+          String(amt ?? "")
+        )}</td>
+      </tr>
+    `;
+    })
+    .join("");
+
+  tbody.innerHTML =
+    html ||
+    `<tr><td colspan="5" style="padding:12px;">No compliances found.</td></tr>`;
+
+  tbody.onclick = (e) => {
+    const tr = e.target.closest("tr[data-no],tr[data-sysid]");
+    if (!tr) return;
+    const no = tr.getAttribute("data-no") || "";
+    const sysId = tr.getAttribute("data-sysid") || "";
+    if (no) {
+      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+        "OpenCompliance:" + no,
+      ]);
+    } else if (sysId) {
+      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+        "OpenComplianceSys:" + sysId,
+      ]);
+    }
+  };
+}
+
+// export for AL
+window.renderCompliances = renderCompliances;
 
 // Replace existing renderComplianceStatistics with this tolerant version
 function renderComplianceStatistics(stats) {
   const s = stats || {};
   const cur = s.lcy || "";
 
-  // Support both new (#stat-yearly) and legacy (#stat-total) IDs
+  // Update if present; don't bail if a card is missing.
   const yearlyEl =
     document.getElementById("stat-yearly") ||
     document.getElementById("stat-total");
   const activeEl = document.getElementById("stat-active");
   const pendingEl = document.getElementById("stat-pending");
-  if (!yearlyEl || !activeEl || !pendingEl) return;
 
-  yearlyEl.textContent = normalizeDash(
-    formatCurrency(s.yearly ?? s.total, cur)
-  );
-  activeEl.textContent = safeInt(s.active);
-  pendingEl.textContent = safeInt(s.pending);
+  if (yearlyEl) {
+    yearlyEl.textContent = normalizeDash(
+      formatCurrency(s.yearly ?? s.total, cur)
+    );
+  }
+  if (activeEl) activeEl.textContent = safeInt(s.active);
+  if (pendingEl) pendingEl.textContent = safeInt(s.pending);
 }
+window.renderComplianceStatistics = renderComplianceStatistics;
 
 function showNotificationTabs() {
   const main = document.querySelector(".main-content");
@@ -1041,7 +1116,6 @@ function renderSubscriptionCategories(categories) {
     if ([...ddSub.options].some((o) => o.value === prev2)) ddSub.value = prev2;
   }
 }
-
 
 // function renderEmployees(employees) {
 //   const arr = Array.isArray(employees) ? employees : employees?.value || [];
@@ -1599,26 +1673,31 @@ function primeLogo() {
 // ---- Search & filter wiring for the subscription list ----
 function wireSubFilters() {
   const search = document.getElementById("sub-search");
-  const cat    = document.getElementById("sub-filter-category");
-  const btn    = document.getElementById("sub-refresh");
-  const run    = debounce(runSubFilterNow, 300);
+  const cat = document.getElementById("sub-filter-category");
+  const btn = document.getElementById("sub-refresh");
+  const run = debounce(runSubFilterNow, 300);
 
   search?.addEventListener("input", run);
-  cat   ?.addEventListener("change", runSubFilterNow);
-  btn   ?.addEventListener("click", runSubFilterNow);
+  cat?.addEventListener("change", runSubFilterNow);
+  btn?.addEventListener("click", runSubFilterNow);
 }
 
 function runSubFilterNow() {
-  const q   = (document.getElementById("sub-search")?.value || "").trim();
+  const q = (document.getElementById("sub-search")?.value || "").trim();
   const cat = document.getElementById("sub-filter-category")?.value || "";
   // Ask AL for the list (it should call back renderSubscriptions below)
-  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getSubscriptions", [{ search: q, category: cat }]);
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("getSubscriptions", [
+    { search: q, category: cat },
+  ]);
 }
 
 // Simple debounce to avoid chatty calls while typing
 function debounce(fn, ms) {
   let t = null;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
 }
 
 function renderSubscriptions(data) {
@@ -1700,4 +1779,3 @@ function safeStr(v) {
 
 // export for AL
 window.renderSubscriptions = renderSubscriptions;
-
