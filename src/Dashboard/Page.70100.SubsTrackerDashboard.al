@@ -152,6 +152,8 @@ begin
     PAGE.Run(PAGE::"Add Subscription", NewSub);
 end;
 
+            NormPageName in ['Open Compliance Calendar', 'Compliance Overview Calendar', 'Calendar'] :
+                PAGE.Run(PAGE::"Compliance Overview Calendar");
 
             NormPageName = 'Manage Subscriptions':
                 PAGE.Run(PAGE::"Manage Subscriptions");
@@ -338,7 +340,7 @@ end;
             exit('Setup & Configuration');
         if (P = 'Company Information') or (P = 'Add Department') or (P = 'AddEmployee') or (P = 'Add Subscription Categories') or P.StartsWith('Edit') then
             exit('Company Information');
-        if P in ['Compliance', 'Open Compliance Chart', 'Submit a Compliance', 'View Submitted Compliance', 'Pending Compliance Submissions', 'This Month''s Submissions', 'Setup New Compliance Item'] then
+        if P in ['Compliance', 'Open Compliance Chart', 'Open Compliance Calendar', 'Submit a Compliance', 'View Submitted Compliance', 'Pending Compliance Submissions', 'This Month''s Submissions', 'Setup New Compliance Item'] then
             exit('Compliance');
         if P in ['Subscription', 'Add Subscription', 'Manage Subscriptions', 'Active Subscriptions', 'Inactive Subscriptions', 'Renewals This Month'] then
             exit('Subscription');

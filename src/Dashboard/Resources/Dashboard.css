@@ -554,9 +554,6 @@ select:focus {
 :root[data-theme="light"] .nav-link:not(.active) {
   border-color: transparent;
 }
-:root[data-theme="light"] .nav-link.active {
-  /* already gradient + white text */
-}
 
 /* Keep large frames’ borders in light to match accent */
 :root[data-theme="light"] .company-container,
@@ -569,55 +566,26 @@ select:focus {
   color: #000 !important;
 }
 /* Sidebar logo: show your image with gradient fallback */
-.logo-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 16px;
-  margin-right: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  /* Try image first, then fallback gradient */
-  background-image: url("logo.png"), var(--grad-primary);
-  background-size: cover, cover;
-  background-position: center, center;
-  background-repeat: no-repeat, no-repeat;
-  background-color: whitesmoke;
-  /* hide any text node (e.g., old "S") */
-  color: transparent;
-  font-size: 0;
-}
-
-.logo-img {
-  width: 70px;
-  height: 60px;
-  margin-right: 12px;
-  border-radius: 12px;
-  object-fit: cover;
-  display: block;
-  background-color: transparent;
-}
-.brand {
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-  white-space: nowrap;
-}
 
 .logo-icon {
-  /* your existing fallback square */
   width: 56px;
   height: 56px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
+  margin-right: 8px;
+  background: var(--grad-primary); /* no background-image here */
+  color: #fff;
+  font-weight: 700;
+  font-size: 24px;
 }
-.logo .brand {
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-  white-space: nowrap;
+
+.logo-img {
+  width: 70px;
+  height: 60px;
+  border-radius: 12px;
+  object-fit: cover;
+  margin-right: 8px;
+  display: block; /* let [hidden] hide it when needed */
 }

@@ -177,11 +177,7 @@ function getMainDashboardHTML() {
             <div class="card-title">Spending Trends</div>
             <div class="card-description">Monthly spend over the selected time range</div>
           </button>
-          <div class="subscription-card">
-            <div class="icon-container">🧩</div>
-            <div class="card-title">Category Breakdown</div>
-            <div class="card-description">Split by subscription category</div>
-          </div>
+          
         </div>
       </div>
 
@@ -193,14 +189,21 @@ function getMainDashboardHTML() {
         </div>
 
         <div class="subscription-grid" style="margin-top:10px">
-          <button class="subscription-card full-span" data-action="open-comp-trend">
-            <div class="icon-container">📈</div>
-            <div>
-              <div class="card-title">Spending Trends</div>
-              <div class="card-description">Monthly spend over the selected time range</div>
-            </div>
-          </button>
-        </div>
+        <button class="subscription-card" data-action="open-comp-trend">
+          <div class="icon-container">📈</div>
+          <div>
+            <div class="card-title">Spending Trends</div>
+            <div class="card-description">Monthly spend over the selected time range</div>
+          </div>
+        </button>
+        <button class="subscription-card" data-action="open-comp-calendar">
+          <div class="icon-container">🗓️</div>
+          <div>
+            <div class="card-title">Calendar</div>
+            <div class="card-description">View compliance items in a calendar</div>
+          </div>
+        </button>
+      </div>
       </div>
     </div>
   `;
@@ -450,44 +453,6 @@ function setActiveNavigation(pageName) {
   // Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
   //   pageName,
   // ]);
-}
-
-function showMainDashboard() {
-  const main = document.querySelector(".main-content");
-  if (!main) return;
-  main.innerHTML = getMainDashboardHTML();
-
-  document.querySelectorAll("[data-dashtab]").forEach((btn) => {
-    btn.addEventListener("click", () =>
-      switchMainDashTab(btn.getAttribute("data-dashtab"))
-    );
-  });
-
-  document
-    .getElementById("dash-range")
-    ?.addEventListener("change", applyDashboardFilters);
-  document
-    .getElementById("dash-category")
-    ?.addEventListener("change", applyDashboardFilters);
-
-  document
-    .querySelector("[data-action='open-sub-trend']")
-    ?.addEventListener("click", () => {
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        "Open Subscription Chart",
-      ]);
-    });
-  document
-    .querySelector("[data-action='open-comp-trend']")
-    ?.addEventListener("click", () => {
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        "Open Compliance Chart",
-      ]);
-    });
-
-  loadSubscriptionCategoriesForFilter();
-  switchMainDashTab("subscription");
-  animateContainer(main.querySelector(".company-container"));
 }
 
 function switchMainDashTab(tab) {
@@ -1369,6 +1334,13 @@ function showMainDashboard() {
         "Open Compliance Chart",
       ]);
     });
+  document
+    .querySelector("[data-action='open-comp-calendar']")
+    ?.addEventListener("click", () => {
+      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+        "Open Compliance Calendar",
+      ]);
+    });
   loadSubscriptionCategoriesForFilter();
   switchMainDashTab("subscription");
   animateContainer(main.querySelector(".company-container"));
@@ -1497,18 +1469,20 @@ function displayInitialSetup(setupData) {
   setupLogoUploadHandler();
   animateContainer(main.querySelector(".company-container"));
 }
-
 function displayCompanyInformation(companyData) {
   const main = document.querySelector(".main-content");
   if (!main) return;
+
   main.innerHTML = getCompanyInfoHTML(companyData);
 
+  // Tab buttons (unchanged)
   document.querySelectorAll("[data-companytab]").forEach((b) => {
     b.addEventListener("click", () => {
       document
         .querySelectorAll(".tab-button-company")
         .forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
+
       document
         .querySelectorAll(".tab-content-company")
         .forEach((c) => c.classList.remove("active"));
@@ -1529,41 +1503,52 @@ function displayCompanyInformation(companyData) {
     });
   });
 
-  // Scope the delegated click handler to the current view container (no { once: true })
-  main.addEventListener("click", (e) => {
+  // ✅ De-dupe the delegated click handler so it doesn't stack up across renders
+  if (main._companyClickHandler) {
+    main.removeEventListener("click", main._companyClickHandler);
+  }
+  main._companyClickHandler = (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
-    const a = btn.getAttribute("data-action");
 
-    if (a === "save-company") {
-      const companyData = {
-        general: {
-          name: document.getElementById("company-name").value,
-          logoBase64: logoBase64,
-        },
-        address: {
-          address: document.getElementById("address").value,
-          countryRegionCode: document.getElementById("country").value,
-        },
-      };
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
-        "updateCompanyInformation",
-        [companyData]
-      );
-    } else if (a === "add-department") {
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        "Add Department",
-      ]);
-    } else if (a === "add-employee") {
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        "AddEmployee",
-      ]);
-    } else if (a === "add-subscription-category") {
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        "Add Subscription Categories",
-      ]);
+    switch (btn.getAttribute("data-action")) {
+      case "save-company": {
+        const companyData = {
+          general: {
+            name: document.getElementById("company-name").value,
+            logoBase64: logoBase64,
+          },
+          address: {
+            address: document.getElementById("address").value,
+            countryRegionCode: document.getElementById("country").value,
+          },
+        };
+        Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+          "updateCompanyInformation",
+          [companyData]
+        );
+        break;
+      }
+      case "add-department":
+        Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+          "Add Department",
+        ]);
+        break;
+
+      case "add-employee":
+        Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+          "AddEmployee",
+        ]);
+        break;
+
+      case "add-subscription-category":
+        Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
+          "Add Subscription Categories",
+        ]);
+        break;
     }
-  });
+  };
+  main.addEventListener("click", main._companyClickHandler);
 
   setupLogoUploadHandler();
   animateContainer(main.querySelector(".company-container"));
