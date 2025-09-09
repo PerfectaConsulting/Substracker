@@ -12,7 +12,7 @@ page 70106 "Pending Compliance List"
     SourceTableView = 
         sorting("Filing Due Date")
         order(Ascending)
-        where(Status = filter("No Due Date" | Overdue));
+        where(Status = filter("No Due Date"));
 
     layout
     {
@@ -24,7 +24,7 @@ page 70106 "Pending Compliance List"
                 field("Compliance Name"; Rec."Compliance Name") { ApplicationArea = All; }
                 field("Compliance Category"; Rec."Compliance Category") { ApplicationArea = All; }
                 field("Governing Authority"; Rec."Governing Authority") { ApplicationArea = All; }
-                field("Current Status"; Rec."Current Status") { ApplicationArea = All; }
+                //field("Current Status"; Rec."Current Status") { ApplicationArea = All; }
                 field("Filing Due Date"; Rec."Filing Due Date") { ApplicationArea = All; }
                 field("Status"; Rec."Status")
                 {

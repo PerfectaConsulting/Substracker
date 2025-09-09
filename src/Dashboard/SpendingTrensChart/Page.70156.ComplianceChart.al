@@ -387,7 +387,7 @@ end;
         FutureDate := CalcDate('+30D', Today());
         ComplianceOverview.Reset();
         ComplianceOverview.SetRange("Filing Due Date", Today(), FutureDate);
-        ComplianceOverview.SetFilter("Current Status", '<>%1', ComplianceOverview."Current Status"::Submitted);
+        //ComplianceOverview.SetFilter("Current Status", '<>%1', ComplianceOverview."Current Status"::Submitted);
         UpcomingCount := ComplianceOverview.Count();
 
         UpcomingDeadlinesText := Format(UpcomingCount) + ' items';
@@ -524,7 +524,7 @@ end;
 
         if ComplianceOverview.FindSet() then
             repeat
-                StatusName := Format(ComplianceOverview."Current Status");
+                //StatusName := Format(ComplianceOverview."Current Status");
                 if StatusCount.ContainsKey(StatusName) then
                     StatusCount.Set(StatusName, StatusCount.Get(StatusName) + 1)
                 else

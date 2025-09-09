@@ -159,7 +159,7 @@ page 70124 "Compliance Overview Calendar"
                 JsonItem.Add('category', Format(ComplianceOverview."Compliance Category"));
                 JsonItem.Add('authority', ComplianceOverview."Governing Authority");
                 JsonItem.Add('status', Format(ComplianceOverview.Status));
-                JsonItem.Add('currentStatus', Format(ComplianceOverview."Current Status"));
+                //JsonItem.Add('currentStatus', Format(ComplianceOverview."Current Status"));
                 JsonItem.Add('complianceId', ComplianceOverview."Compliance ID");
                 JsonArray.Add(JsonItem);
             until ComplianceOverview.Next() = 0;
@@ -234,11 +234,11 @@ page 50101 "Compliance Overview List"
                     ApplicationArea = All;
                     Caption = 'Status';
                 }
-                field("Current Status"; Rec."Current Status")
-                {
-                    ApplicationArea = All;
-                    Caption = 'Current Status';
-                }
+                // field("Current Status"; Rec."Current Status")
+                // {
+                //     ApplicationArea = All;
+                //     Caption = 'Current Status';
+                // }
                 field("Payable Amount"; Rec."Payable Amount")
                 {
                     ApplicationArea = All;

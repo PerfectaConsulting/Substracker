@@ -263,6 +263,10 @@ end;
                     SendSubscriptionCategories();
                 end;
 
+                NormPageName = 'Overdue Submissions':
+                  PAGE.Run(PAGE::"Pending Overdue List");
+
+
             NormPageName.StartsWith('EditSubscriptionCategory:'):
                 begin
                     if EvaluateTextId(NormPageName, 'EditSubscriptionCategory:', Cat.Code) then begin
@@ -340,8 +344,9 @@ end;
             exit('Setup & Configuration');
         if (P = 'Company Information') or (P = 'Add Department') or (P = 'AddEmployee') or (P = 'Add Subscription Categories') or P.StartsWith('Edit') then
             exit('Company Information');
-        if P in ['Compliance', 'Open Compliance Chart', 'Open Compliance Calendar', 'Submit a Compliance', 'View Submitted Compliance', 'Pending Compliance Submissions', 'This Month''s Submissions', 'Setup New Compliance Item'] then
-            exit('Compliance');
+        if P in ['Compliance', 'Open Compliance Chart', 'Open Compliance Calendar', 'Submit a Compliance', 'View Submitted Compliance', 'Pending Compliance Submissions', 'Overdue Submissions', 'This Month''s Submissions', 'Setup New Compliance Item'] then
+    exit('Compliance');
+
         if P in ['Subscription', 'Add Subscription', 'Manage Subscriptions', 'Active Subscriptions', 'Inactive Subscriptions', 'Renewals This Month'] then
             exit('Subscription');
         if P in ['Notification', 'Subscription Notifications', 'Compliance Notifications'] then
@@ -526,6 +531,7 @@ begin
                 Clear(Obj);
                 Obj.Add('no', Comp."Compliance ID");
                 Obj.Add('name', Comp."Compliance Name");
+                Obj.Add('frequency', Format(Comp."Filing Recurring Frequency"));
                 Obj.Add('status', Format(Comp.Status));
                 Obj.Add('dueDate', Format(Comp."Filing Due Date"));
                 Obj.Add('amount', Comp."Payable Amount");
@@ -553,7 +559,7 @@ end;
     // =========================================
     // Compliance Statistics (existing)
     // =========================================
-    local procedure SendComplianceStatistics()
+local procedure SendComplianceStatistics()
 var
     ComplianceRec: Record "Compliance Overview";
     ArchiveRec: Record "Compliance Overview Archive";
@@ -573,15 +579,14 @@ begin
     FromDate := DMY2DATE(1, 1, Date2DMY(Today(), 3));
     ToDate := DMY2DATE(31, 12, Date2DMY(Today(), 3));
 
-    // Apply range ONCE and reuse for both ActiveCount and yearly sum
+    // ✅ Active = archive rows submitted IN THE CURRENT YEAR
     ArchiveRec.Reset();
     ArchiveRec.SetRange("File Submitted", FromDate, ToDate);
-
-    // ✅ Active = archive rows submitted in the current year
     ActiveCount := ArchiveRec.Count;
 
-    // Yearly amount sum (same filtered set)
-    UseSift := false;
+    // ✅ Yearly Spend tile = ALL-TIME sum of Payable Amount (ignore dates)
+    UseSift := false; // set true if a SumIndexField exists on "Payable Amount"
+    ArchiveRec.Reset(); // clear any filters to include ALL records
     if UseSift then begin
         ArchiveRec.CalcSums("Payable Amount");
         SumAmt := ArchiveRec."Payable Amount";
@@ -593,10 +598,8 @@ begin
             until ArchiveRec.Next() = 0;
     end;
 
-    Stats.Add('yearly', SumAmt);
-    Stats.Add('total', SumAmt);
-    Stats.Add('active', ActiveCount);
-    Stats.Add('pending', PendingCount);
+    Stats.Add('yearly', SumAmt); // JS prefers 'yearly' first
+    Stats.Add('total',  SumAmt); // keep 'total' in sync for fallback
     if GLSetup.Get() then
         Stats.Add('lcy', GLSetup."LCY Code")
     else
@@ -604,6 +607,7 @@ begin
 
     CurrPage.Dashboard.renderComplianceStatistics(Stats);
 end;
+
 
 
    local procedure SendComplianceStatisticsWithRange(FromDateTxt: Text; ToDateTxt: Text)
@@ -620,29 +624,26 @@ var
     CurrYearFrom: Date;
     CurrYearTo: Date;
 begin
-    // Parse optional range (used for amount only)
+    // Parse optional inputs (still used for other analytics later if needed)
     if not ParseIsoDate(FromDateTxt, FromDate) then
         FromDate := 0D;
     if not ParseIsoDate(ToDateTxt, ToDate) then
         ToDate := 0D;
 
-    // Pending = count of all current items
+    // Pending = all current items
     ComplianceRec.Reset();
     PendingCount := ComplianceRec.Count;
 
-    // ✅ Active = current-year archive count (ignore incoming range)
+    // ✅ Active = current-year archive count (unchanged)
     CurrYearFrom := DMY2DATE(1, 1, Date2DMY(Today(), 3));
     CurrYearTo := DMY2DATE(31, 12, Date2DMY(Today(), 3));
     ArchiveRec.Reset();
     ArchiveRec.SetRange("File Submitted", CurrYearFrom, CurrYearTo);
     ActiveCount := ArchiveRec.Count;
 
-    // Amount sum — keep honoring the passed range (or all if none supplied)
-    ArchiveRec.Reset();
-    if (FromDate <> 0D) or (ToDate <> 0D) then
-        ArchiveRec.SetRange("File Submitted", FromDate, ToDate);
-
-    UseSift := false;
+    // ✅ Yearly Spend tile = ALL-TIME sum of Payable Amount (ignore incoming range)
+    UseSift := false; // set true if SumIndexField available
+    ArchiveRec.Reset(); // no filters -> ALL records
     if UseSift then begin
         ArchiveRec.CalcSums("Payable Amount");
         SumAmt := ArchiveRec."Payable Amount";
@@ -655,7 +656,7 @@ begin
     end;
 
     Stats.Add('yearly', SumAmt);
-    Stats.Add('total', SumAmt);
+    Stats.Add('total',  SumAmt);
     Stats.Add('active', ActiveCount);
     Stats.Add('pending', PendingCount);
     if GLSetup.Get() then

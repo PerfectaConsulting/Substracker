@@ -18,6 +18,7 @@ table 70101 "Compliance Overview"
         field(5; "Current Status"; Option)
         {
             OptionMembers = Active,Pending,Compliant,"Non-Compliant",Submitted;
+            ObsoleteState= Removed;
             DataClassification = CustomerContent;
         }
         field(6; "Filing Starting Date"; Date) { DataClassification = CustomerContent; }
@@ -37,6 +38,7 @@ table 70101 "Compliance Overview"
         field(12; "Status"; Option)
         {
             OptionMembers = Submitted,Overdue,"Due Today","Upcoming Due","No Due Date";
+            OptionCaption ='Filed,Late,Due today,Due soon,Pending';
             DataClassification = CustomerContent;
         }
         field(13; "File Submitted"; Date) { DataClassification = CustomerContent; }
@@ -55,6 +57,12 @@ table 70101 "Compliance Overview"
         field(22; "Custom 3"; Text[250]) { DataClassification = CustomerContent; }
         field(23; "Custom 4"; Text[250]) { DataClassification = CustomerContent; }
         field(24; "Custom5"; Text[250]) { DataClassification = CustomerContent; }
+        field(25; "Bank Debit Date"; Date)
+        {
+            DataClassification = CustomerContent;
+            Caption = 'Bank Debit Date';
+            ToolTip = 'Specifies the date when the payable amount was debited from the bank.';
+        }
         
     }
     keys
@@ -74,20 +82,20 @@ table 70101 "Compliance Overview"
         end;
     end;
 
-    trigger OnModify()
-    begin
-        // Auto-sync Current Status with new Status field
-        case Rec."Status" of
-            Rec."Status"::OverDue:
-                Rec."Current Status" := Rec."Current Status"::"Non-Compliant";
-            Rec."Status"::"Due Today":
-                Rec."Current Status" := Rec."Current Status"::Pending;
-            Rec."Status"::"Upcoming Due":
-                Rec."Current Status" := Rec."Current Status"::Active;
-            Rec."Status"::"No Due Date":
-                Rec."Current Status" := Rec."Current Status"::Compliant;
-            Rec."Status"::Submitted:
-                Rec."Current Status" := Rec."Current Status"::Submitted;
-        end;
-    end;
+    // trigger OnModify()
+    // begin
+    //     // Auto-sync Current Status with new Status field
+    //     case Rec."Status" of
+    //         Rec."Status"::OverDue:
+    //             Rec."Current Status" := Rec."Current Status"::"Non-Compliant";
+    //         Rec."Status"::"Due Today":
+    //             Rec."Current Status" := Rec."Current Status"::Pending;
+    //         Rec."Status"::"Upcoming Due":
+    //             Rec."Current Status" := Rec."Current Status"::Active;
+    //         Rec."Status"::"No Due Date":
+    //             Rec."Current Status" := Rec."Current Status"::Compliant;
+    //         Rec."Status"::Submitted:
+    //             Rec."Current Status" := Rec."Current Status"::Submitted;
+    //     end;
+    // end;
 }

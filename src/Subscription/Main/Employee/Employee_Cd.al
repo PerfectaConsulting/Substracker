@@ -13,10 +13,12 @@ page 50121 "Employee Ext Card"
             {
                 Caption = 'General Information';
 
+                // 1) No. with AssistEdit
                 field("No."; Rec."No.")
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the employee number.';
+                    QuickEntry = true;
 
                     trigger OnAssistEdit()
                     begin
@@ -25,205 +27,286 @@ page 50121 "Employee Ext Card"
                     end;
                 }
 
+                // 2) First Name
                 field("First Name"; Rec."First Name")
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the first name of the employee.';
-                    // REMOVED: ShowMandatory = true; (as requested - all fields non-mandatory)
+                    QuickEntry = true;
                 }
 
+                // 3) Last Name
                 field("Last Name"; Rec."Last Name")
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the last name of the employee.';
-                    // REMOVED: ShowMandatory = true; (as requested - all fields non-mandatory)
+                    QuickEntry = true;
                 }
 
+                // 4) Full Name (read-only, auto-derived)
                 field("Full Name"; Rec."Full Name")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies the full name of the employee.';
-                    Importance = Additional;
+                    ToolTip = 'Shows the full name of the employee.';
+                    Editable = false;
+                    QuickEntry = false; // skip during tabbing
                 }
 
-                field("Email"; Rec.Email)
+                // 5) Email
+                field(Email; Rec.Email)
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the email address of the employee.';
+                    QuickEntry = true;
                 }
 
+                // 6) Phone No.
                 field("Phone No."; Rec."Phone No.")
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the phone number of the employee.';
+                    QuickEntry = true;
                 }
 
-                field("Status"; Rec.Status)
+                // 7) Employment Date (defaults to WorkDate on new record)
+                field("Employment Date"; Rec."Employment Date")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies the employee status.';
-                    StyleExpr = StatusStyle;
+                    ToolTip = 'Specifies the employment start date.';
+                    QuickEntry = true;
                 }
 
-                field("Blocked"; Rec.Blocked)
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies if the employee is blocked.';
-                    StyleExpr = BlockedStyle;
-                }
-            }
-
-            group(Employment)
-            {
-                Caption = 'Employment Details';
-
+                // 8) Department Code (optional)
                 field("Department Code"; Rec."Department Code")
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the department code.';
-                    // REMOVED: ShowMandatory = true; (as requested - all fields non-mandatory)
+                    QuickEntry = true;
                 }
 
-                field("Department Description"; Rec."Department Description")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the department description.';
-                }
-
+                // 9) Position Title (optional)
                 field("Position Title"; Rec."Position Title")
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the position title.';
-                }
-
-                field("Employment Date"; Rec."Employment Date")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the employment date.';
-                }
-
-                field("Termination Date"; Rec."Termination Date")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the termination date if applicable.';
-                }
-
-                field("Manager Employee No."; Rec."Manager Employee No.")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the manager employee number.';
-                }
-
-                field("Manager Name"; Rec."Manager Name")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the manager name.';
-                }
-
-                field("Salary"; Rec.Salary)
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the employee salary.';
+                    QuickEntry = true;
                 }
             }
+            // group(General)
+            // {
+            //     Caption = 'General Information';
 
-            group(AddressDetails)  // FIXED: Changed from "Address" to "AddressDetails" to avoid naming conflicts
-            {
-                Caption = 'Address Information';
+            //     field("No."; Rec."No.")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the employee number.';
 
-                field("Employee Address"; Rec.Address)  // FIXED: Changed from "Address" to "Employee Address" to avoid naming conflicts
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the employee address.';
-                }
+            //         trigger OnAssistEdit()
+            //         begin
+            //             if Rec.AssistEdit(xRec) then
+            //                 CurrPage.Update();
+            //         end;
+            //     }
 
-                field("City"; Rec.City)
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the city.';
-                }
+            //     field("First Name"; Rec."First Name")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the first name of the employee.';
+            //         // REMOVED: ShowMandatory = true; (as requested - all fields non-mandatory)
+            //     }
 
-                field("Post Code"; Rec."Post Code")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the post code.';
-                }
+            //     field("Last Name"; Rec."Last Name")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the last name of the employee.';
+            //         // REMOVED: ShowMandatory = true; (as requested - all fields non-mandatory)
+            //     }
 
-                field("Country/Region Code"; Rec."Country/Region Code")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies the country/region code.';
-                }
-            }
+            //     field("Full Name"; Rec."Full Name")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the full name of the employee.';
+            //         Importance = Additional;
+            //     }
 
-            group(Statistics)
-            {
-                Caption = 'Statistics';
+            //     field("Email"; Rec.Email)
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the email address of the employee.';
+            //     }
 
-                field("Subscription Count"; Rec."Subscription Count")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Shows the number of subscriptions assigned to this employee.';
-                    DrillDownPageId = "Manage Subscriptions";
+            //     field("Phone No."; Rec."Phone No.")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the phone number of the employee.';
+            //     }
 
-                    trigger OnDrillDown()
-                    var
-                        Subscription: Record Subscription;
-                        SubscriptionList: Page "Manage Subscriptions";
-                    begin
-                        Subscription.SetRange("End-user", Rec."No.");
-                        SubscriptionList.SetTableView(Subscription);
-                        SubscriptionList.Run();
-                    end;
-                }
+            //     field("Status"; Rec.Status)
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the employee status.';
+            //         StyleExpr = StatusStyle;
+            //     }
 
-                field("Subordinates Count"; SubordinatesCount)
-                {
-                    ApplicationArea = All;
-                    Caption = 'Direct Reports';
-                    ToolTip = 'Shows the number of employees reporting to this employee.';
-                    Editable = false;
+            //     field("Blocked"; Rec.Blocked)
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies if the employee is blocked.';
+            //         StyleExpr = BlockedStyle;
+            //     }
+            // }
 
-                    trigger OnDrillDown()
-                    var
-                        EmployeeExt: Record "Employee Ext";
-                        EmployeeExtList: Page "Employee Ext List";
-                    begin
-                        EmployeeExt.SetRange("Manager Employee No.", Rec."No.");
-                        EmployeeExtList.SetTableView(EmployeeExt);
-                        EmployeeExtList.Run();
-                    end;
-                }
-            }
+            // group(Employment)
+            // {
+            //     Caption = 'Employment Details';
 
-            group(Administration)
-            {
-                Caption = 'Administration';
+            //     field("Department Code"; Rec."Department Code")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the department code.';
+            //         // REMOVED: ShowMandatory = true; (as requested - all fields non-mandatory)
+            //     }
 
-                field("Created Date"; Rec."Created Date")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies when the record was created.';
-                }
+            //     field("Department Description"; Rec."Department Description")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the department description.';
+            //     }
 
-                field("Created By"; Rec."Created By")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies who created the record.';
-                }
+            //     field("Position Title"; Rec."Position Title")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the position title.';
+            //     }
 
-                field("Last Modified Date"; Rec."Last Modified Date")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies when the record was last modified.';
-                }
+            //     field("Employment Date"; Rec."Employment Date")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the employment date.';
+            //     }
 
-                field("Last Modified By"; Rec."Last Modified By")
-                {
-                    ApplicationArea = All;
-                    ToolTip = 'Specifies who last modified the record.';
-                }
-            }
+            //     field("Termination Date"; Rec."Termination Date")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the termination date if applicable.';
+            //     }
+
+            //     field("Manager Employee No."; Rec."Manager Employee No.")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the manager employee number.';
+            //     }
+
+            //     field("Manager Name"; Rec."Manager Name")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the manager name.';
+            //     }
+
+            //     field("Salary"; Rec.Salary)
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the employee salary.';
+            //     }
+            // }
+
+            // group(AddressDetails)  // FIXED: Changed from "Address" to "AddressDetails" to avoid naming conflicts
+            // {
+            //     Caption = 'Address Information';
+
+            //     field("Employee Address"; Rec.Address)  // FIXED: Changed from "Address" to "Employee Address" to avoid naming conflicts
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the employee address.';
+            //     }
+
+            //     field("City"; Rec.City)
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the city.';
+            //     }
+
+            //     field("Post Code"; Rec."Post Code")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the post code.';
+            //     }
+
+            //     field("Country/Region Code"; Rec."Country/Region Code")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies the country/region code.';
+            //     }
+            // }
+
+            // group(Statistics)
+            // {
+            //     Caption = 'Statistics';
+
+            //     field("Subscription Count"; Rec."Subscription Count")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Shows the number of subscriptions assigned to this employee.';
+            //         DrillDownPageId = "Manage Subscriptions";
+
+            //         trigger OnDrillDown()
+            //         var
+            //             Subscription: Record Subscription;
+            //             SubscriptionList: Page "Manage Subscriptions";
+            //         begin
+            //             Subscription.SetRange("End-user", Rec."No.");
+            //             SubscriptionList.SetTableView(Subscription);
+            //             SubscriptionList.Run();
+            //         end;
+            //     }
+
+            //     field("Subordinates Count"; SubordinatesCount)
+            //     {
+            //         ApplicationArea = All;
+            //         Caption = 'Direct Reports';
+            //         ToolTip = 'Shows the number of employees reporting to this employee.';
+            //         Editable = false;
+
+            //         trigger OnDrillDown()
+            //         var
+            //             EmployeeExt: Record "Employee Ext";
+            //             EmployeeExtList: Page "Employee Ext List";
+            //         begin
+            //             EmployeeExt.SetRange("Manager Employee No.", Rec."No.");
+            //             EmployeeExtList.SetTableView(EmployeeExt);
+            //             EmployeeExtList.Run();
+            //         end;
+            //     }
+            // }
+
+            // group(Administration)
+            // {
+            //     Caption = 'Administration';
+
+            //     field("Created Date"; Rec."Created Date")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies when the record was created.';
+            //     }
+
+            //     field("Created By"; Rec."Created By")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies who created the record.';
+            //     }
+
+            //     field("Last Modified Date"; Rec."Last Modified Date")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies when the record was last modified.';
+            //     }
+
+            //     field("Last Modified By"; Rec."Last Modified By")
+            //     {
+            //         ApplicationArea = All;
+            //         ToolTip = 'Specifies who last modified the record.';
+            //     }
+            // }
         }
 
         area(FactBoxes)

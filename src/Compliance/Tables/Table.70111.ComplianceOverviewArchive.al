@@ -64,6 +64,12 @@ table 70111 "Compliance Overview Archive"
 
         field(17; "Additional Notes"; Text[250]) { DataClassification = CustomerContent; }
         field(18; "Submitted By"; Text[250]) { DataClassification = CustomerContent; }
+        field(19; "Bank Debit Date"; Date)
+        {
+            DataClassification = CustomerContent;
+            Caption = 'Bank Debit Date';
+            ToolTip = 'Specifies the date when the payable amount was debited from the bank.';
+        }
     }
 
     keys

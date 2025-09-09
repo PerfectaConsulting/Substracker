@@ -1,13 +1,18 @@
-page 70105 "Completed Compliance List"
+page 70126 "Pending Overdue List"
 {
     PageType = List;
     SourceTable = "Compliance Overview";
     ApplicationArea = All;
     UsageCategory = Lists;
-    Caption = 'Completed Compliance';
+    Caption = 'Pending Compliance';
     Editable = false;
     InsertAllowed = false;
     DeleteAllowed = false;
+
+    SourceTableView = 
+        sorting("Filing Due Date")
+        order(Ascending)
+        where(Status = filter(Overdue));
 
     layout
     {
@@ -32,8 +37,4 @@ page 70105 "Completed Compliance List"
         }
     }
 
-    trigger OnOpenPage()
-    begin
-        Rec.SetRange(Status, Rec.Status::Submitted);
-    end;
-}
+    }

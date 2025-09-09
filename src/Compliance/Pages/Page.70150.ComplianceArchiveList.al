@@ -22,6 +22,7 @@ page 70150 "Compliance Archive List"
                 field("Filing Due Date"; Rec."Filing Due Date") { }
                 field("Status"; Rec."Status") { }
                 field("File Submitted"; Rec."File Submitted") { }
+                 field("Bank Debit Date"; Rec."Bank Debit Date") { ApplicationArea = All; }
                 field("Submitted By"; Rec."Submitted By") { }
                 field("Submission Reference No."; Rec."Submission Reference No.") { }
             }

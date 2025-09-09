@@ -19,7 +19,7 @@ page 70107 "Due This Month Compliance List"
                 field("Compliance Name"; Rec."Compliance Name") { ApplicationArea = All; }
                 field("Compliance Category"; Rec."Compliance Category") { ApplicationArea = All; }
                 field("Governing Authority"; Rec."Governing Authority") { ApplicationArea = All; }
-                field("Current Status"; Rec."Current Status") { ApplicationArea = All; }
+                // field("Current Status"; Rec."Current Status") { ApplicationArea = All; }
                 field("Filing Due Date"; Rec."Filing Due Date") { ApplicationArea = All; }
                 field("Status"; Rec."Status")
                 {

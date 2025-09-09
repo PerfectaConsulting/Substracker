@@ -38,11 +38,11 @@ page 70104 "Compliance List"
                     ApplicationArea = All;
                     Editable = false;
                 }
-                field("Current Status"; Rec."Current Status")
-                {
-                    ApplicationArea = All;
-                    Editable = false;
-                }
+                // field("Current Status"; Rec."Current Status")
+                // {
+                //     ApplicationArea = All;
+                //     Editable = false;
+                // }
                 field("Filing Due Date"; Rec."Filing Due Date")
                 {
                     ApplicationArea = All;

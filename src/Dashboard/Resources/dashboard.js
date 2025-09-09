@@ -259,11 +259,26 @@ function getInitialSetupHTML(setupData) {
       <div class="tab-content-company" id="payment-methods-tab">
         <h3 class="section-title">Payment Methods</h3>
         <p class="section-subtitle">Create and manage supported payment methods.</p>
+
         <div class="form-row">
           <button type="button" class="btn" data-action="open-pm-modal">Add Methods</button>
-          <button type="button" class="btn" data-action="open-pm-page">Open Payment Methods Page</button>
+          <!-- Removed "Open Payment Methods Page" button -->
         </div>
-        <div id="payment-methods-list" class="payment-list"></div>
+
+        <div id="pm-table-container" style="overflow:auto;border-radius:12px;border:1px solid var(--border);margin-top:8px;">
+          <table id="pm-table" style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:var(--panel-soft);color:var(--text-1);text-align:left;">
+                <th style="padding:10px 12px;border-bottom:1px solid var(--border);">Title</th>
+                <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Type</th>
+                <th style="padding:10px 12px;border-bottom:1px solid var(--border);">Description</th>
+                <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Managed By</th>
+                <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Expires At</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
 
         <div id="pm-modal" class="modal-overlay">
           <div class="modal">
@@ -325,10 +340,11 @@ function getCompanyInfoHTML(companyData) {
   const logo = companyData?.general?.logo
     ? `data:image/png;base64,${companyData.general.logo}`
     : "";
+
   return `
     <div class="company-container">
       <h1 class="company-title">Company Details</h1>
-      <p class="company-subtitle">Manage company information, departments, employees, and system settings.</p>
+      <p class="company-subtitle">View company information, departments, employees, and system settings.</p>
 
       <div class="tab-header">
         <button class="tab-button-company active" data-companytab="company"><span class="tab-icon">📁</span> Company Information</button>
@@ -340,44 +356,50 @@ function getCompanyInfoHTML(companyData) {
 
       <div class="tab-content-company active" id="company-tab">
         <h3 class="section-title">Company Information</h3>
-        <p class="section-subtitle">Update your company details and branding</p>
+        <p class="section-subtitle">This data is read-only.</p>
+
         <form id="company-form">
           <div class="form-row">
             <div class="form-group">
               <label for="company-name">Company Name</label>
-              <input type="text" id="company-name" value="${escapeHtml(
-                companyData?.general?.name || ""
-              )}" placeholder="Enter company name">
+              <input type="text" id="company-name"
+                     value="${escapeHtml(companyData?.general?.name || "")}"
+                     disabled readonly>
             </div>
             <div class="form-group logo-group">
               <label>Company Logo</label>
-              <div class="logo-upload">
-                <input type="file" id="logo-upload" accept="image/png, image/jpeg" style="display:none;">
-                <label for="logo-upload" class="upload-label"><span class="upload-icon">↑</span>Upload Logo</label>
-                <p>PNG, JPG up to 5MB</p>
+              <div class="logo-upload" aria-disabled="true">
+                <!-- No upload control; just show current logo if available -->
                 <img id="logo-preview" src="${logo}" style="${
     logo ? "" : "display:none;"
-  }">
+  }" alt="Company logo">
+                ${logo ? "" : `<p>No logo available</p>`}
               </div>
             </div>
           </div>
+
           <div class="form-group">
             <label for="address">Address</label>
-            <input type="text" id="address" value="${escapeHtml(
-              companyData?.address?.address || ""
-            )}" placeholder="Enter company address">
+            <input type="text" id="address"
+                   value="${escapeHtml(companyData?.address?.address || "")}"
+                   disabled readonly>
           </div>
+
           <div class="form-group">
             <label for="country">Country</label>
-            <input type="text" id="country" value="${escapeHtml(
-              companyData?.address?.countryRegionCode || ""
-            )}" placeholder="Enter country">
+            <input type="text" id="country"
+                   value="${escapeHtml(
+                     companyData?.address?.countryRegionCode || ""
+                   )}"
+                   disabled readonly>
           </div>
+
           <div class="form-group">
             <label for="financial-year">Financial Year End</label>
-            <input type="date" id="financial-year">
+            <input type="date" id="financial-year" disabled readonly>
           </div>
-          <button type="button" class="btn save-btn" data-action="save-company">Save Company Information</button>
+
+          <!-- Save button removed intentionally -->
         </form>
       </div>
 
@@ -684,6 +706,7 @@ function showComplianceButtons() {
       ${cmTile("Submit a Compliance", "🗂️")}
       ${cmTile("View Submitted Compliance", "📬")}
       ${cmTile("Pending Compliance Submissions", "⏳")}
+      ${cmTile("Overdue Submissions", "⏰")}   
       ${cmTile("This Month's Submissions", "📆")}
     </div>
 
@@ -701,6 +724,7 @@ function showComplianceButtons() {
           <tr style="background:var(--panel-soft);color:var(--text-1);text-align:left;">
             <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Compliance ID</th>
             <th style="padding:10px 12px;border-bottom:1px solid var(--border);">Compliance Name</th>
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Filing Frequency</th>
             <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Status</th>
             <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">Filing Due Date</th>
             <th style="padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:right;">Payable Amount</th>
@@ -757,6 +781,7 @@ function runCompSearchNow() {
     { search: q },
   ]);
 }
+
 function renderCompliances(data) {
   const rows = Array.isArray(data) ? data : data?.value || [];
   const tbody = document.querySelector("#comp-table tbody");
@@ -766,36 +791,41 @@ function renderCompliances(data) {
     .map((r) => {
       const id = safeStr(r.no || r.id || r.complianceId || "");
       const name = safeStr(r.name || r.complianceName || "");
+      const freq = safeStr(r.frequency || r.filingFrequency || ""); // ← NEW
       const status = safeStr(r.status || "");
       const due = safeStr(r.dueDate || "");
       const amt = r.amount !== undefined ? r.amount : r.payableAmount || 0;
 
       return `
-      <tr data-no="${escapeAttr(id)}" data-sysid="${escapeAttr(r.sysId || "")}"
-          style="cursor:pointer;">
-        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
-          id
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);">${escapeHtml(
-          name
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
-          status
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
-          due
-        )}</td>
-        <td style="padding:8px 12px;border-top:1px solid var(--border);text-align:right;">${escapeHtml(
-          String(amt ?? "")
-        )}</td>
-      </tr>
-    `;
+        <tr data-no="${escapeAttr(id)}" data-sysid="${escapeAttr(
+        r.sysId || ""
+      )}" style="cursor:pointer;">
+          <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+            id
+          )}</td>
+          <td style="padding:8px 12px;border-top:1px solid var(--border);">${escapeHtml(
+            name
+          )}</td>
+          <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+            freq
+          )}</td> <!-- NEW -->
+          <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+            status
+          )}</td>
+          <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+            due
+          )}</td>
+          <td style="padding:8px 12px;border-top:1px solid var(--border);text-align:right;">${escapeHtml(
+            String(amt ?? "")
+          )}</td>
+        </tr>
+      `;
     })
     .join("");
 
   tbody.innerHTML =
     html ||
-    `<tr><td colspan="5" style="padding:12px;">No compliances found.</td></tr>`;
+    `<tr><td colspan="6" style="padding:12px;">No compliances found.</td></tr>`;
 
   tbody.onclick = (e) => {
     const tr = e.target.closest("tr[data-no],tr[data-sysid]");
@@ -912,64 +942,59 @@ function loadTabContent(tabName, pageId, pageTitle) {
    9) List Rendering
    ========================= */
 function renderPaymentMethods(methods) {
-  const arr = Array.isArray(methods) ? methods : methods?.value || [];
-  const list = document.getElementById("payment-methods-list");
-  if (!list) return;
+  const rows = Array.isArray(methods) ? methods : methods?.value || [];
+  const tbody = document.querySelector("#pm-table tbody");
+  if (!tbody) return;
 
-  // Render tiles with both id (Entry No.) and sysId (GUID)
-  list.innerHTML =
-    arr.length === 0
-      ? `<div style="opacity:.8;">No payment methods found.</div>`
-      : arr
-          .map((m) => {
-            const id = m.id; // number (may be 0/null)
-            const sysId = m.sysId || ""; // GUID string
-            return `
-              <button class="payment-card" data-action="edit-pm"
-                      data-id="${
-                        id !== undefined && id !== null ? String(id) : ""
-                      }"
-                      data-sysid="${escapeAttr(sysId)}">
-                <div class="icon-pill" data-icon="${escapeHtml(
-                  m.icon || ""
-                )}"></div>
-                <div class="title">${escapeHtml(m.title || "")}</div>
-                <div class="meta">${escapeHtml(m.description || "")}</div>
-              </button>
-            `;
-          })
-          .join("");
+  const html = rows
+    .map((m) => {
+      const sysId = m.sysId || "";
+      const title = safeStr(m.title || "");
+      const type = safeStr(m.type || "");
+      const desc = safeStr(m.description || "");
+      const managedBy = safeStr(m.managedBy || "");
+      const expiresAt = safeStr(m.expiresAt || ""); // AL sends '' if 0D
 
-  // Prevent duplicate listeners across re-renders
-  if (list._clickHandler) {
-    list.removeEventListener("click", list._clickHandler);
-  }
-  list._clickHandler = (e) => {
-    const btn = e.target.closest("[data-action='edit-pm']");
-    if (!btn) return;
+      return `
+        <tr data-sysid="${escapeAttr(sysId)}">
+          <td style="padding:8px 12px;border-top:1px solid var(--border);">
+            <a href="#" data-action="open-pm" data-sysid="${escapeAttr(
+              sysId
+            )}">${escapeHtml(title)}</a>
+          </td>
+          <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+            type
+          )}</td>
+          <td style="padding:8px 12px;border-top:1px solid var(--border);">${escapeHtml(
+            desc
+          )}</td>
+          <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+            managedBy
+          )}</td>
+          <td style="padding:8px 12px;border-top:1px solid var(--border);white-space:nowrap;">${escapeHtml(
+            expiresAt
+          )}</td>
+        </tr>
+      `;
+    })
+    .join("");
 
-    const idAttr = btn.getAttribute("data-id");
-    const sysId = btn.getAttribute("data-sysid") || "";
+  tbody.innerHTML =
+    html ||
+    `<tr><td colspan="5" style="padding:12px;">No payment methods found.</td></tr>`;
 
-    // Prefer numeric Entry No. when valid (>0), otherwise fall back to SystemId
-    const idNum = Number(idAttr);
-    if (Number.isFinite(idNum) && idNum > 0) {
-      Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
-        "EditPaymentMethod:" + String(idNum),
-      ]);
-    } else if (sysId) {
+  // Clickable title -> open Page 70152 (via existing AL handler EditPaymentMethodSys)
+  tbody.onclick = (e) => {
+    const a = e.target.closest('a[data-action="open-pm"]');
+    if (!a) return;
+    e.preventDefault();
+    const sysId = a.getAttribute("data-sysid") || "";
+    if (sysId) {
       Microsoft.Dynamics.NAV.InvokeExtensibilityMethod("OnNavigationClick", [
         "EditPaymentMethodSys:" + sysId,
       ]);
-    } else {
-      // As a last resort, do nothing (or console.warn)
-      // console.warn("Payment method tile missing both id and sysId");
     }
   };
-  list.addEventListener("click", list._clickHandler);
-
-  // Optional: keep animation
-  animateCards();
 }
 
 function renderDepartments(departments) {

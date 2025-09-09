@@ -31,11 +31,8 @@ page 70103 "Compliance Card"
                 }
                 field("Compliance Category"; Rec."Compliance Category") { ApplicationArea = All; }
                 field("Governing Authority"; Rec."Governing Authority") { ApplicationArea = All; }
-                field("Current Status"; Rec."Current Status")
-                {
-                    ApplicationArea = All;
-                    Editable = false;
-                }
+                field("Payable Amount"; Rec."Payable Amount") { ApplicationArea = All; }
+                
                 field("Status"; Rec."Status")
                 {
                     ApplicationArea = All;
@@ -84,8 +81,18 @@ page 70103 "Compliance Card"
                 }
                 field("Submission Reference No."; Rec."Submission Reference No.") { ApplicationArea = All; }
                 field("Submitted By"; Rec."Submitted By") { ApplicationArea = All; Editable = false; }
-                field("Payable Amount"; Rec."Payable Amount") { ApplicationArea = All; }
+                
                 field("Penalty or Fine"; Rec."Penalty or Fine") { ApplicationArea = All; }
+                field("Bank Debit Date"; Rec."Bank Debit Date")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Enter the date when the payable amount was debited from the bank.';
+                }
+                // field("Current Status"; Rec."Current Status")
+                // {
+                //     ApplicationArea = All;
+                //     Editable = false;
+                // }
                 field("Additional Notes"; Rec."Additional Notes")
                 {
                     ApplicationArea = All;
