@@ -32,6 +32,7 @@ const PM_ICONS = [
 
 let pmSelectedIcon = "visa";
 let logoBase64 = "";
+let LAST_LCY = "";
 // --- Resolve folder where this JS file lives (…/Dashboard/Resources/) ---
 let ASSET_BASE = "";
 (function resolveAssetBase() {
@@ -138,10 +139,15 @@ function getMainDashboardHTML() {
       <p class="company-subtitle">At-a-glance analytics for Subscriptions and Compliance</p>
 
       <div class="tab-header">
-        <button class="tab-button-company active" data-dashtab="subscription"><span class="tab-icon">📦</span> Subscription</button>
-        <button class="tab-button-company" data-dashtab="compliance"><span class="tab-icon">✅</span> Compliance</button>
+        <button class="tab-button-company active" data-dashtab="subscription">
+          <span class="tab-icon">📦</span> Subscription
+        </button>
+        <button class="tab-button-company" data-dashtab="compliance">
+          <span class="tab-icon">✅</span> Compliance
+        </button>
       </div>
 
+      <!-- Shared filters only for Subscription tab -->
       <div class="tab-content-company" id="dash-filters">
         <div class="form-row" style="margin-bottom:16px">
           <div class="form-group">
@@ -162,13 +168,25 @@ function getMainDashboardHTML() {
         </div>
       </div>
 
+      <!-- Subscription tab -->
       <div id="dash-subscription">
-       <div class="stats-container" style="margin-top:20px;">
-
-          <div class="stat-box purple"><div class="stat-label">Monthly Spend</div><div id="sub-kpi-monthly" class="stat-value">—</div></div>
-          <div class="stat-box purple"><div class="stat-label">Yearly Spend</div><div id="sub-kpi-yearly" class="stat-value">—</div></div>
-          <div class="stat-box green"><div class="stat-label">Active Subscriptions</div><div id="sub-kpi-active" class="stat-value">0</div></div>
-          <div class="stat-box yellow"><div class="stat-label">Upcoming Renewals</div><div id="sub-kpi-renewals" class="stat-value">0</div></div>
+        <div class="stats-container" style="margin-top:20px;">
+          <div class="stat-box purple">
+            <div class="stat-label">Monthly Spend</div>
+            <div id="sub-kpi-monthly" class="stat-value">—</div>
+          </div>
+          <div class="stat-box purple">
+            <div class="stat-label">Yearly Spend</div>
+            <div id="sub-kpi-yearly" class="stat-value">—</div>
+          </div>
+          <div class="stat-box green">
+            <div class="stat-label">Active Subscriptions</div>
+            <div id="sub-kpi-active" class="stat-value">0</div>
+          </div>
+          <div class="stat-box yellow">
+            <div class="stat-label">Upcoming Renewals</div>
+            <div id="sub-kpi-renewals" class="stat-value">0</div>
+          </div>
         </div>
 
         <div class="subscription-grid" style="margin-top:10px">
@@ -177,37 +195,72 @@ function getMainDashboardHTML() {
             <div class="card-title">Spending Trends</div>
             <div class="card-description">Monthly spend over the selected time range</div>
           </button>
-          
         </div>
       </div>
 
+      <!-- Compliance tab -->
       <div id="dash-compliance" style="display:none">
         <div class="stats-container" style="margin-top:16px">
-          <div class="stat-box purple"><div class="stat-label">Yearly Spend</div><div id="stat-yearly" class="stat-value">—</div></div>
-          <div class="stat-box green"><div class="stat-label">Active</div><div id="stat-active" class="stat-value">0</div></div>
-          <div class="stat-box yellow"><div class="stat-label">Pending</div><div id="stat-pending" class="stat-value">0</div></div>
+          <div class="stat-box purple">
+            <div class="stat-label">Yearly Spend</div>
+            <div id="stat-yearly" class="stat-value">—</div>
+          </div>
+          <div class="stat-box green">
+            <div class="stat-label">Active</div>
+            <div id="stat-active" class="stat-value">0</div>
+          </div>
+          <div class="stat-box yellow">
+            <div class="stat-label">Pending</div>
+            <div id="stat-pending" class="stat-value">0</div>
+          </div>
         </div>
 
         <div class="subscription-grid" style="margin-top:10px">
-        <button class="subscription-card" data-action="open-comp-trend">
-          <div class="icon-container">📈</div>
-          <div>
-            <div class="card-title">Spending Trends</div>
-            <div class="card-description">Monthly spend over the selected time range</div>
+          <button class="subscription-card" data-action="open-comp-trend">
+            <div class="icon-container">📈</div>
+            <div>
+              <div class="card-title">Spending Trends</div>
+              <div class="card-description">Monthly spend over the selected time range</div>
+            </div>
+          </button>
+          <button class="subscription-card" data-action="open-comp-calendar">
+            <div class="icon-container">🗓️</div>
+            <div>
+              <div class="card-title">Calendar</div>
+              <div class="card-description">View compliance items in a calendar</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- NEW: Spend distribution donut + date range -->
+        <div class="donut-block">
+          <div class="donut-controls">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="comp-dist-from">From</label>
+                <input type="date" id="comp-dist-from">
+              </div>
+              <div class="form-group">
+                <label for="comp-dist-to">To</label>
+                <input type="date" id="comp-dist-to">
+              </div>
+              <div class="form-group" style="align-self:flex-end;">
+                <button class="btn" id="comp-dist-apply" type="button">Apply</button>
+              </div>
+            </div>
           </div>
-        </button>
-        <button class="subscription-card" data-action="open-comp-calendar">
-          <div class="icon-container">🗓️</div>
-          <div>
-            <div class="card-title">Calendar</div>
-            <div class="card-description">View compliance items in a calendar</div>
+
+          <div class="donut-wrap">
+            <svg id="comp-donut" viewBox="0 0 240 240" width="240" height="240"
+                 role="img" aria-label="Compliance spend distribution"></svg>
+            <div id="comp-legend" class="donut-legend"></div>
           </div>
-        </button>
-      </div>
+        </div>
       </div>
     </div>
   `;
 }
+
 
 function getInitialSetupHTML(setupData) {
   return `
@@ -500,6 +553,7 @@ function switchMainDashTab(tab) {
   } else {
     Poller.stop("sub");
     Poller.start("comp", requestComplianceStats);
+    setupDashboardComplianceDonut();   
   }
 }
 
@@ -851,6 +905,7 @@ window.renderCompliances = renderCompliances;
 function renderComplianceStatistics(stats) {
   const s = stats || {};
   const cur = s.lcy || "";
+  LAST_LCY = cur || LAST_LCY; 
 
   // Update if present; don't bail if a card is missing.
   const yearlyEl =
@@ -1786,6 +1841,142 @@ function renderSubscriptions(data) {
 function safeStr(v) {
   return v === null || v === undefined ? "" : String(v);
 }
+function setupDashboardComplianceDonut() {
+  const fromEl = document.getElementById("comp-dist-from");
+  const toEl = document.getElementById("comp-dist-to");
+  const applyBtn = document.getElementById("comp-dist-apply");
+  if (!fromEl || !toEl || !applyBtn) return;
+
+  // Wire only once
+  if (!fromEl.dataset.wired) {
+    // Default to YTD
+    const today = new Date();
+    const ytd = new Date(today.getFullYear(), 0, 1);
+    fromEl.value = localYYYYMMDD(ytd);
+    toEl.value = localYYYYMMDD(today);
+
+    const run = () => requestComplianceDistribution();
+
+    applyBtn.addEventListener("click", run);
+    fromEl.addEventListener("change", debounce(run, 200));
+    toEl.addEventListener("change", debounce(run, 200));
+
+    fromEl.dataset.wired = "1";
+  }
+
+  // Load once on first show / tab switch
+  requestComplianceDistribution();
+}
+
+function requestComplianceDistribution() {
+  const from = document.getElementById("comp-dist-from")?.value || "";
+  const to = document.getElementById("comp-dist-to")?.value || "";
+  // basic guard: if swapped, swap back
+  if (from && to && from > to) {
+    const fromEl = document.getElementById("comp-dist-from");
+    const toEl = document.getElementById("comp-dist-to");
+    const t = fromEl.value;
+    fromEl.value = toEl.value;
+    toEl.value = t;
+  }
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+    "getComplianceDistribution",
+    [
+      document.getElementById("comp-dist-from")?.value || "",
+      document.getElementById("comp-dist-to")?.value || "",
+    ]
+  );
+}
+
+// AL -> JS callback
+function renderComplianceDistribution(items) {
+  const arr = Array.isArray(items) ? items : items?.value || [];
+  const svg = document.getElementById("comp-donut");
+  const legend = document.getElementById("comp-legend");
+  if (!svg || !legend) return;
+
+  svg.innerHTML = "";
+  legend.innerHTML = "";
+
+  if (!arr.length) {
+    legend.innerHTML = `<div style="opacity:.8;">No submissions in the selected range.</div>`;
+    return;
+  }
+
+  const data = arr
+    .map((x) => ({
+      label: safeStr(x.label || ""),
+      value: Number(x.amount || 0),
+    }))
+    .filter((x) => x.value > 0);
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total <= 0) {
+    legend.innerHTML = `<div style="opacity:.8;">No spend in the selected range.</div>`;
+    return;
+  }
+
+  drawDonut(svg, data, total);
+  // Legend
+  data.forEach((d, i) => {
+    const pct = Math.round((d.value / total) * 100);
+    const color = donutColor(i, data.length);
+    const row = document.createElement("div");
+    row.className = "legend-item";
+    row.innerHTML = `
+      <span class="legend-swatch" style="background:${color}"></span>
+      <span class="legend-label">${escapeHtml(d.label)}</span>
+      <span class="legend-value">${escapeHtml(
+        formatCurrency(d.value, LAST_LCY)
+      )} (${pct}%)</span>
+    `;
+    legend.appendChild(row);
+  });
+}
+
+function drawDonut(svgEl, data, total) {
+  const NS = "http://www.w3.org/2000/svg";
+  const cx = 120,
+    cy = 120,
+    r = 90,
+    stroke = 40;
+  const circumference = 2 * Math.PI * r;
+
+  // Background track
+  const bg = document.createElementNS(NS, "circle");
+  bg.setAttribute("cx", cx);
+  bg.setAttribute("cy", cy);
+  bg.setAttribute("r", r);
+  bg.setAttribute("fill", "none");
+  bg.setAttribute("stroke", "rgba(255,255,255,0.12)");
+  bg.setAttribute("stroke-width", stroke);
+  svgEl.appendChild(bg);
+
+  let offset = 0;
+  data.forEach((d, i) => {
+    const segLen = (d.value / total) * circumference;
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", cx);
+    c.setAttribute("cy", cy);
+    c.setAttribute("r", r);
+    c.setAttribute("fill", "none");
+    c.setAttribute("stroke", donutColor(i, data.length));
+    c.setAttribute("stroke-width", stroke);
+    c.setAttribute("stroke-dasharray", `${segLen} ${circumference - segLen}`);
+    c.setAttribute("stroke-dashoffset", String(-offset));
+    c.setAttribute("transform", `rotate(-90 ${cx} ${cy})`);
+    svgEl.appendChild(c);
+    offset += segLen;
+  });
+}
+
+function donutColor(i, n) {
+  // Pastel-ish palette that works in light/dark
+  const hue = Math.round((i / Math.max(1, n)) * 360);
+  return `hsl(${hue} 70% 55%)`;
+}
+
+// Expose for AL
+window.renderComplianceDistribution = renderComplianceDistribution;
 
 // export for AL
 window.renderSubscriptions = renderSubscriptions;

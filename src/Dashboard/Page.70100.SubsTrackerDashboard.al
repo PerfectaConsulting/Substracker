@@ -10,71 +10,76 @@ page 70100 "SubsTracker Dashboard"
         area(Content)
         {
             usercontrol(Dashboard; SubsTrackerDashboard)
-            {
-                ApplicationArea = All;
+        {
+            ApplicationArea = All;
 
-                trigger OnNavigationClick(PageName: Text)
-                begin
-                    HandleNavigation(PageName);
-                end;
+            trigger OnNavigationClick(PageName: Text)
+            begin
+                HandleNavigation(PageName);
+            end;
 
-                trigger updateCompanyInformation(CompanyData: JsonObject)
-                begin
-                    UpdateCompanyInformation(CompanyData);
-                end;
+            trigger updateCompanyInformation(CompanyData: JsonObject)
+            begin
+                UpdateCompanyInformation(CompanyData);
+            end;
 
-                trigger updateInitialSetup(SetupData: JsonObject)
-                begin
-                    UpdateInitialSetup(SetupData);
-                end;
+            trigger updateInitialSetup(SetupData: JsonObject)
+            begin
+                UpdateInitialSetup(SetupData);
+            end;
 
-                trigger savePaymentMethod(PaymentData: JsonObject)
-                begin
-                    SavePaymentMethod(PaymentData);
-                end;
+            trigger savePaymentMethod(PaymentData: JsonObject)
+            begin
+                SavePaymentMethod(PaymentData);
+            end;
 
-                trigger getComplianceStats(FromDateTxt: Text; ToDateTxt: Text)
-                begin
-                    SendComplianceStatisticsWithRange(FromDateTxt, ToDateTxt);
-                end;
+            trigger getComplianceStats(FromDateTxt: Text; ToDateTxt: Text)
+            begin
+                SendComplianceStatisticsWithRange(FromDateTxt, ToDateTxt);
+            end;
 
-                trigger getPaymentMethods()
-                begin
-                    SendPaymentMethods();
-                end;
+            trigger getPaymentMethods()
+            begin
+                SendPaymentMethods();
+            end;
 
-                trigger getDepartments()
-                begin
-                    SendDepartments();
-                end;
+            trigger getDepartments()
+            begin
+                SendDepartments();
+            end;
 
-                trigger getEmployees()
-                begin
-                    SendEmployees();
-                end;
+            trigger getEmployees()
+            begin
+                SendEmployees();
+            end;
 
-                trigger getSubscriptionCategories()
-                begin
-                    SendSubscriptionCategories();
-                end;
+            trigger getSubscriptionCategories()
+            begin
+                SendSubscriptionCategories();
+            end;
 
-                trigger getSubscriptionStats()
-                begin
-                    SendSubscriptionStatistics();
-                end;
+            trigger getSubscriptionStats()
+            begin
+                SendSubscriptionStatistics();
+            end;
 
-                // 🔹 NEW: populate the Subscription list/grid
-                trigger getSubscriptions(Filter: JsonObject)
-                begin
-                    SendSubscriptions(Filter);
-                end;
+            // Populate the Subscription list/grid
+            trigger getSubscriptions(Filter: JsonObject)
+            begin
+                SendSubscriptions(Filter);
+            end;
 
-                trigger getCompliances(Filter: JsonObject)
-begin
-    SendCompliances(Filter);
-end;
+            trigger getCompliances(Filter: JsonObject)
+            begin
+                SendCompliances(Filter);
+            end;
 
-            }
+            // NEW: donut chart data request from JS (Dashboard -> Compliance tab)
+            trigger getComplianceDistribution(FromDateTxt: Text; ToDateTxt: Text)
+            begin
+                SendComplianceDistribution(FromDateTxt, ToDateTxt);
+            end;
+        }
         }
     }
 
@@ -83,6 +88,62 @@ end;
     var
         GLSetup: Record "General Ledger Setup";
         CompanyInfo: Record "Company Information";
+
+local procedure SendComplianceDistribution(FromDateTxt: Text; ToDateTxt: Text)
+var
+    ArchiveRec: Record "Compliance Overview Archive"; // table 70111
+    AmountByName: Dictionary of [Text, Decimal];
+    Keys: List of [Text];
+    KeyName: Text;
+    FromDate: Date;
+    ToDate: Date;
+    Arr: JsonArray;
+    Obj: JsonObject;
+    CurAmt: Decimal;
+    i: Integer;
+begin
+    // Parse optional ISO dates (YYYY-MM-DD). Empty -> no bound on that side.
+    if not ParseIsoDate(FromDateTxt, FromDate) then
+        FromDate := 0D;
+    if not ParseIsoDate(ToDateTxt, ToDate) then
+        ToDate := 0D;
+
+    ArchiveRec.Reset();
+    if (FromDate <> 0D) or (ToDate <> 0D) then begin
+        if FromDate = 0D then
+            FromDate := DMY2DATE(1, 1, 1753); // minimal SQL date
+        if ToDate = 0D then
+            ToDate := DMY2DATE(31, 12, 9999);
+        ArchiveRec.SetRange("File Submitted", FromDate, ToDate);
+    end;
+
+    // Group by Compliance Name and sum Payable Amount
+    if ArchiveRec.FindSet() then
+        repeat
+            KeyName := ArchiveRec."Compliance Name"; // use "Compliance ID" if you prefer
+            if AmountByName.ContainsKey(KeyName) then begin
+                AmountByName.Get(KeyName, CurAmt);
+                CurAmt += ArchiveRec."Payable Amount";
+                AmountByName.Set(KeyName, CurAmt);
+            end else begin
+                AmountByName.Add(KeyName, ArchiveRec."Payable Amount");
+                Keys.Add(KeyName); // track insertion order / keys for later iteration
+            end;
+        until ArchiveRec.Next() = 0;
+
+    // Emit: [{ "label": <name>, "amount": <sum> }]
+    for i := 1 to Keys.Count() do begin
+        KeyName := Keys.Get(i);
+        AmountByName.Get(KeyName, CurAmt);
+        Clear(Obj);
+        Obj.Add('label', KeyName);
+        Obj.Add('amount', CurAmt);
+        Arr.Add(Obj);
+    end;
+
+    CurrPage.Dashboard.renderComplianceDistribution(Arr);
+end;
+
 
     // =========================================
     // Navigation dispatcher
