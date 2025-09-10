@@ -139,15 +139,10 @@ function getMainDashboardHTML() {
       <p class="company-subtitle">At-a-glance analytics for Subscriptions and Compliance</p>
 
       <div class="tab-header">
-        <button class="tab-button-company active" data-dashtab="subscription">
-          <span class="tab-icon">📦</span> Subscription
-        </button>
-        <button class="tab-button-company" data-dashtab="compliance">
-          <span class="tab-icon">✅</span> Compliance
-        </button>
+        <button class="tab-button-company active" data-dashtab="subscription"><span class="tab-icon">📦</span> Subscription</button>
+        <button class="tab-button-company" data-dashtab="compliance"><span class="tab-icon">✅</span> Compliance</button>
       </div>
 
-      <!-- Shared filters only for Subscription tab -->
       <div class="tab-content-company" id="dash-filters">
         <div class="form-row" style="margin-bottom:16px">
           <div class="form-group">
@@ -168,25 +163,12 @@ function getMainDashboardHTML() {
         </div>
       </div>
 
-      <!-- Subscription tab -->
       <div id="dash-subscription">
         <div class="stats-container" style="margin-top:20px;">
-          <div class="stat-box purple">
-            <div class="stat-label">Monthly Spend</div>
-            <div id="sub-kpi-monthly" class="stat-value">—</div>
-          </div>
-          <div class="stat-box purple">
-            <div class="stat-label">Yearly Spend</div>
-            <div id="sub-kpi-yearly" class="stat-value">—</div>
-          </div>
-          <div class="stat-box green">
-            <div class="stat-label">Active Subscriptions</div>
-            <div id="sub-kpi-active" class="stat-value">0</div>
-          </div>
-          <div class="stat-box yellow">
-            <div class="stat-label">Upcoming Renewals</div>
-            <div id="sub-kpi-renewals" class="stat-value">0</div>
-          </div>
+          <div class="stat-box purple"><div class="stat-label">Monthly Spend</div><div id="sub-kpi-monthly" class="stat-value">—</div></div>
+          <div class="stat-box purple"><div class="stat-label">Yearly Spend</div><div id="sub-kpi-yearly" class="stat-value">—</div></div>
+          <div class="stat-box green"><div class="stat-label">Active Subscriptions</div><div id="sub-kpi-active" class="stat-value">0</div></div>
+          <div class="stat-box yellow"><div class="stat-label">Upcoming Renewals</div><div id="sub-kpi-renewals" class="stat-value">0</div></div>
         </div>
 
         <div class="subscription-grid" style="margin-top:10px">
@@ -196,23 +178,35 @@ function getMainDashboardHTML() {
             <div class="card-description">Monthly spend over the selected time range</div>
           </button>
         </div>
+
+        <!-- NEW: Subscription spend distribution donut + date range -->
+        <div class="donut-block">
+          <div class="donut-controls">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="sub-dist-from">From</label>
+                <input type="date" id="sub-dist-from">
+              </div>
+              <div class="form-group">
+                <label for="sub-dist-to">To</label>
+                <input type="date" id="sub-dist-to">
+              </div>
+            </div>
+          </div>
+
+          <div class="donut-wrap">
+            <svg id="sub-donut" viewBox="0 0 240 240" width="240" height="240"
+                 role="img" aria-label="Subscription spend distribution"></svg>
+            <div id="sub-legend" class="donut-legend"></div>
+          </div>
+        </div>
       </div>
 
-      <!-- Compliance tab -->
       <div id="dash-compliance" style="display:none">
         <div class="stats-container" style="margin-top:16px">
-          <div class="stat-box purple">
-            <div class="stat-label">Yearly Spend</div>
-            <div id="stat-yearly" class="stat-value">—</div>
-          </div>
-          <div class="stat-box green">
-            <div class="stat-label">Active</div>
-            <div id="stat-active" class="stat-value">0</div>
-          </div>
-          <div class="stat-box yellow">
-            <div class="stat-label">Pending</div>
-            <div id="stat-pending" class="stat-value">0</div>
-          </div>
+          <div class="stat-box purple"><div class="stat-label">Yearly Spend</div><div id="stat-yearly" class="stat-value">—</div></div>
+          <div class="stat-box green"><div class="stat-label">Active</div><div id="stat-active" class="stat-value">0</div></div>
+          <div class="stat-box yellow"><div class="stat-label">Pending</div><div id="stat-pending" class="stat-value">0</div></div>
         </div>
 
         <div class="subscription-grid" style="margin-top:10px">
@@ -232,7 +226,6 @@ function getMainDashboardHTML() {
           </button>
         </div>
 
-        <!-- NEW: Spend distribution donut + date range -->
         <div class="donut-block">
           <div class="donut-controls">
             <div class="form-row">
@@ -243,9 +236,6 @@ function getMainDashboardHTML() {
               <div class="form-group">
                 <label for="comp-dist-to">To</label>
                 <input type="date" id="comp-dist-to">
-              </div>
-              <div class="form-group" style="align-self:flex-end;">
-                <button class="btn" id="comp-dist-apply" type="button">Apply</button>
               </div>
             </div>
           </div>
@@ -260,6 +250,7 @@ function getMainDashboardHTML() {
     </div>
   `;
 }
+
 
 
 function getInitialSetupHTML(setupData) {
@@ -550,12 +541,14 @@ function switchMainDashTab(tab) {
   if (isSub) {
     Poller.stop("comp");
     Poller.start("sub", requestSubscriptionStats);
+    setupDashboardSubscriptionDonut(); // NEW
   } else {
     Poller.stop("sub");
     Poller.start("comp", requestComplianceStats);
-    setupDashboardComplianceDonut();   
+    setupDashboardComplianceDonut?.(); // existing for Compliance donut (if present)
   }
 }
+
 
 /* =========================
    5) Filters
@@ -1841,32 +1834,30 @@ function renderSubscriptions(data) {
 function safeStr(v) {
   return v === null || v === undefined ? "" : String(v);
 }
+
 function setupDashboardComplianceDonut() {
   const fromEl = document.getElementById("comp-dist-from");
   const toEl = document.getElementById("comp-dist-to");
-  const applyBtn = document.getElementById("comp-dist-apply");
-  if (!fromEl || !toEl || !applyBtn) return;
+  if (!fromEl || !toEl) return;
 
-  // Wire only once
   if (!fromEl.dataset.wired) {
     // Default to YTD
     const today = new Date();
     const ytd = new Date(today.getFullYear(), 0, 1);
-    fromEl.value = localYYYYMMDD(ytd);
-    toEl.value = localYYYYMMDD(today);
+    if (!fromEl.value) fromEl.value = localYYYYMMDD(ytd);
+    if (!toEl.value) toEl.value = localYYYYMMDD(today);
 
     const run = () => requestComplianceDistribution();
-
-    applyBtn.addEventListener("click", run);
     fromEl.addEventListener("change", debounce(run, 200));
     toEl.addEventListener("change", debounce(run, 200));
 
     fromEl.dataset.wired = "1";
   }
 
-  // Load once on first show / tab switch
+  // Initial load when the tab is shown
   requestComplianceDistribution();
 }
+
 
 function requestComplianceDistribution() {
   const from = document.getElementById("comp-dist-from")?.value || "";
@@ -1977,6 +1968,91 @@ function donutColor(i, n) {
 
 // Expose for AL
 window.renderComplianceDistribution = renderComplianceDistribution;
+function setupDashboardSubscriptionDonut() {
+  const fromEl = document.getElementById("sub-dist-from");
+  const toEl = document.getElementById("sub-dist-to");
+  if (!fromEl || !toEl) return;
+
+  if (!fromEl.dataset.wired) {
+    const today = new Date();
+    const ytd = new Date(today.getFullYear(), 0, 1);
+    if (!fromEl.value) fromEl.value = localYYYYMMDD(ytd);
+    if (!toEl.value) toEl.value = localYYYYMMDD(today);
+
+    const run = () => requestSubscriptionDistribution();
+    fromEl.addEventListener("change", debounce(run, 200));
+    toEl.addEventListener("change", debounce(run, 200));
+
+    fromEl.dataset.wired = "1";
+  }
+  requestSubscriptionDistribution();
+}
+
+function requestSubscriptionDistribution() {
+  const from = document.getElementById("sub-dist-from")?.value || "";
+  const to = document.getElementById("sub-dist-to")?.value || "";
+  if (from && to && from > to) {
+    const fromEl = document.getElementById("sub-dist-from");
+    const toEl = document.getElementById("sub-dist-to");
+    const t = fromEl.value;
+    fromEl.value = toEl.value;
+    toEl.value = t;
+  }
+  Microsoft.Dynamics.NAV.InvokeExtensibilityMethod(
+    "getSubscriptionDistribution",
+    [
+      document.getElementById("sub-dist-from")?.value || "",
+      document.getElementById("sub-dist-to")?.value || "",
+    ]
+  );
+}
+
+// AL -> JS callback
+function renderSubscriptionDistribution(items) {
+  const arr = Array.isArray(items) ? items : items?.value || [];
+  const svg = document.getElementById("sub-donut");
+  const legend = document.getElementById("sub-legend");
+  if (!svg || !legend) return;
+
+  svg.innerHTML = "";
+  legend.innerHTML = "";
+
+  if (!arr.length) {
+    legend.innerHTML = `<div style="opacity:.8;">No subscriptions in the selected range.</div>`;
+    return;
+  }
+
+  const data = arr
+    .map((x) => ({
+      label: safeStr(x.label || ""),
+      value: Number(x.amount || 0),
+    }))
+    .filter((x) => x.value > 0);
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total <= 0) {
+    legend.innerHTML = `<div style="opacity:.8;">No spend in the selected range.</div>`;
+    return;
+  }
+
+  drawDonut(document.getElementById("sub-donut"), data, total);
+  data.forEach((d, i) => {
+    const pct = Math.round((d.value / total) * 100);
+    const color = donutColor(i, data.length);
+    const row = document.createElement("div");
+    row.className = "legend-item";
+    row.innerHTML = `
+      <span class="legend-swatch" style="background:${color}"></span>
+      <span class="legend-label">${escapeHtml(d.label)}</span>
+      <span class="legend-value">${escapeHtml(
+        formatCurrency(d.value, LAST_LCY)
+      )} (${pct}%)</span>
+    `;
+    legend.appendChild(row);
+  });
+}
+
+// drawDonut() and donutColor() already exist (used by Compliance). Reuse them.
+window.renderSubscriptionDistribution = renderSubscriptionDistribution;
 
 // export for AL
 window.renderSubscriptions = renderSubscriptions;

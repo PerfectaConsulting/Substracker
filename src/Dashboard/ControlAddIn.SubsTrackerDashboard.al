@@ -23,8 +23,9 @@ controladdin SubsTrackerDashboard
     event getSubscriptionCategories();
     event getComplianceStats(FromDateTxt: Text; ToDateTxt: Text);
     event getSubscriptions(Filter: JsonObject);
-    event getCompliances(Filter: JsonObject);            // NEW (existing from your code)
-    event getComplianceDistribution(FromDateTxt: Text; ToDateTxt: Text); // NEW
+    event getCompliances(Filter: JsonObject);
+    event getComplianceDistribution(FromDateTxt: Text; ToDateTxt: Text);
+    event getSubscriptionDistribution(FromDateTxt: Text; ToDateTxt: Text); // NEW
 
     // Procedures (AL -> JS)
     procedure setActiveNavigation(PageName: Text);
@@ -38,6 +39,7 @@ controladdin SubsTrackerDashboard
     procedure renderEmployees(Employees: JsonArray);
     procedure renderSubscriptionCategories(Categories: JsonArray);
     procedure renderSubscriptions(Subscriptions: JsonArray);
-    procedure renderCompliances(Compliances: JsonArray); // NEW (existing from your code)
-    procedure renderComplianceDistribution(Items: JsonArray); // NEW
+    procedure renderCompliances(Compliances: JsonArray);
+    procedure renderComplianceDistribution(Items: JsonArray);
+    procedure renderSubscriptionDistribution(Items: JsonArray); // NEW
 }

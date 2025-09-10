@@ -6,10 +6,10 @@ page 70100 "SubsTracker Dashboard"
     Caption = 'SubsTracker Dashboard';
 
     layout
+{
+    area(Content)
     {
-        area(Content)
-        {
-            usercontrol(Dashboard; SubsTrackerDashboard)
+        usercontrol(Dashboard; SubsTrackerDashboard)
         {
             ApplicationArea = All;
 
@@ -63,7 +63,6 @@ page 70100 "SubsTracker Dashboard"
                 SendSubscriptionStatistics();
             end;
 
-            // Populate the Subscription list/grid
             trigger getSubscriptions(Filter: JsonObject)
             begin
                 SendSubscriptions(Filter);
@@ -74,20 +73,130 @@ page 70100 "SubsTracker Dashboard"
                 SendCompliances(Filter);
             end;
 
-            // NEW: donut chart data request from JS (Dashboard -> Compliance tab)
             trigger getComplianceDistribution(FromDateTxt: Text; ToDateTxt: Text)
             begin
                 SendComplianceDistribution(FromDateTxt, ToDateTxt);
             end;
-        }
+
+            // NEW: subscription donut data request
+            trigger getSubscriptionDistribution(FromDateTxt: Text; ToDateTxt: Text)
+            begin
+                SendSubscriptionDistribution(FromDateTxt, ToDateTxt);
+            end;
         }
     }
+}
 
+   
     actions { }
 
     var
         GLSetup: Record "General Ledger Setup";
         CompanyInfo: Record "Company Information";
+
+local procedure SendSubscriptionDistribution(FromDateTxt: Text; ToDateTxt: Text)
+var
+    Sub: Record "Subscription";             // table 50110
+    AmountByName: Dictionary of [Text, Decimal];
+    Keys: List of [Text];
+    KeyName: Text;
+    FromDate: Date;
+    ToDate: Date;
+    RangeFrom: Date;
+    RangeTo: Date;
+    EffStart: Date;
+    EffEnd: Date;
+    OverlapDays: Integer;
+    YearlyAmt: Decimal;
+    DailyRate: Decimal;
+    Spend: Decimal;
+    Arr: JsonArray;
+    Obj: JsonObject;
+    i: Integer;
+    CurAmt: Decimal;
+begin
+    // Parse optional ISO dates (YYYY-MM-DD). Empty -> unbounded on that side.
+    if not ParseIsoDate(FromDateTxt, FromDate) then
+        FromDate := 0D;
+    if not ParseIsoDate(ToDateTxt, ToDate) then
+        ToDate := 0D;
+
+    RangeFrom := FromDate;
+    RangeTo := ToDate;
+    if RangeFrom = 0D then
+        RangeFrom := DMY2DATE(1, 1, 1753);
+    if RangeTo = 0D then
+        RangeTo := DMY2DATE(31, 12, 9999);
+
+    Sub.Reset();
+    // Optional: only consider subscriptions that overlap the selected range at all
+    if Sub.FindSet() then
+        repeat
+            // Determine overlap between [RangeFrom, RangeTo] and subscription lifetime
+            EffStart := Sub."Start Date";
+            if EffStart = 0D then
+                EffStart := RangeFrom;
+            EffEnd := Sub."End Date";
+            if EffEnd = 0D then
+                EffEnd := RangeTo;
+
+            if EffStart < RangeFrom then
+                EffStart := RangeFrom;
+            if EffEnd > RangeTo then
+                EffEnd := RangeTo;
+
+            if (EffEnd >= EffStart) then begin
+                OverlapDays := EffEnd - EffStart + 1;
+
+                // Convert subscription amount to an estimated daily rate via yearly normalization
+                case Sub."Billing Cycle" of
+                    Sub."Billing Cycle"::Weekly:
+                        YearlyAmt := Sub."Amount in LCY" * 52;
+                    Sub."Billing Cycle"::Monthly:
+                        YearlyAmt := Sub."Amount in LCY" * 12;
+                    Sub."Billing Cycle"::Quarterly:
+                        YearlyAmt := Sub."Amount in LCY" * 4;
+                    Sub."Billing Cycle"::Yearly:
+                        YearlyAmt := Sub."Amount in LCY";
+                    else
+                        YearlyAmt := Sub."Amount in LCY" * 12; // default monthly
+                end;
+
+                DailyRate := 0;
+                if YearlyAmt <> 0 then
+                    DailyRate := YearlyAmt / 365;
+
+                Spend := Round(DailyRate * OverlapDays, 0.01, '=');
+
+                // Group by subscription name (fallback to No.)
+                if Sub."Service Name" <> '' then
+                    KeyName := Sub."Service Name"
+                else
+                    KeyName := Format(Sub."No.");
+
+                if AmountByName.ContainsKey(KeyName) then begin
+                    AmountByName.Get(KeyName, CurAmt);
+                    CurAmt += Spend;
+                    AmountByName.Set(KeyName, CurAmt);
+                end else begin
+                    AmountByName.Add(KeyName, Spend);
+                    Keys.Add(KeyName);
+                end;
+            end;
+        until Sub.Next() = 0;
+
+    // Emit array [{ label, amount }]
+    for i := 1 to Keys.Count() do begin
+        KeyName := Keys.Get(i);
+        AmountByName.Get(KeyName, CurAmt);
+        Clear(Obj);
+        Obj.Add('label', KeyName);
+        Obj.Add('amount', CurAmt);
+        Arr.Add(Obj);
+    end;
+
+    CurrPage.Dashboard.renderSubscriptionDistribution(Arr);
+end;
 
 local procedure SendComplianceDistribution(FromDateTxt: Text; ToDateTxt: Text)
 var
