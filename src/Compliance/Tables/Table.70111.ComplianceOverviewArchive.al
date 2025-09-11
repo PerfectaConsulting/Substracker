@@ -64,7 +64,7 @@ table 70111 "Compliance Overview Archive"
 
         field(17; "Additional Notes"; Text[250]) { DataClassification = CustomerContent; }
         field(18; "Submitted By"; Text[250]) { DataClassification = CustomerContent; }
-        field(19; "Bank Debit Date"; Date)
+        field(55; "Bank Debit Date"; Date)
         {
             DataClassification = CustomerContent;
             Caption = 'Bank Debit Date';

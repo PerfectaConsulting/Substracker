@@ -2,7 +2,7 @@
   "id": "f053a3ec-3e73-4021-b50c-8ede209cc6c6",
   "name": "SubsTracker",
   "publisher": "Perfecta Consulting",
-  "version": "1.0.10.0",
+  "version": "1.1.15.0",
   "brief": "",
   "description": "",
   "privacyStatement": "",
@@ -14,7 +14,7 @@
 
   "screenshots": [],
   "platform": "1.0.0.0",
-  "application": "26.0.0.0",
+  "application": "27.0.0.0",
   "idRanges": [
     {
       "from": 50100,
@@ -31,6 +31,6 @@
     "includeSourceInSymbolFile": true
   },
 
-  "runtime": "15.0",
+  "runtime": "16.0",
   "features": ["NoImplicitWith"]
 }

@@ -9,7 +9,7 @@ page 70156 "Compliance Chart"
     {
         area(Content)
         {
-            // KPI Section at the top
+            // ===================== KPIs =====================
             group(ComplianceKPIs)
             {
                 Caption = 'Key Performance Indicators';
@@ -51,7 +51,7 @@ page 70156 "Compliance Chart"
                 }
             }
 
-            // Filters and Options
+            // ===================== Filters & Options =====================
             group(FilterOptions)
             {
                 Caption = 'Filters & Display Options';
@@ -61,7 +61,6 @@ page 70156 "Compliance Chart"
                     ApplicationArea = All;
                     Caption = 'From Date';
                     ToolTip = 'Filter compliance data from this date onwards';
-
                     trigger OnValidate()
                     begin
                         RefreshAllData();
@@ -73,7 +72,6 @@ page 70156 "Compliance Chart"
                     ApplicationArea = All;
                     Caption = 'To Date';
                     ToolTip = 'Filter compliance data up to this date';
-
                     trigger OnValidate()
                     begin
                         RefreshAllData();
@@ -86,7 +84,6 @@ page 70156 "Compliance Chart"
                     Caption = 'Chart Type';
                     OptionCaption = 'Pie Chart,Doughnut Chart,Column Chart,Line Chart,Area Chart,Point Chart';
                     ToolTip = 'Select how to display the compliance data visually';
-
                     trigger OnValidate()
                     begin
                         RefreshAllCharts();
@@ -98,7 +95,6 @@ page 70156 "Compliance Chart"
                     ApplicationArea = All;
                     Caption = 'Show Percentages';
                     ToolTip = 'Display percentage values in addition to counts';
-
                     trigger OnValidate()
                     begin
                         RefreshAllCharts();
@@ -106,7 +102,7 @@ page 70156 "Compliance Chart"
                 }
             }
 
-            // Charts in a more organized layout
+            // ===================== Charts =====================
             group(ChartsContainer)
             {
                 Caption = 'Charts Overview';
@@ -115,23 +111,19 @@ page 70156 "Compliance Chart"
                 {
                     Caption = 'Top 15 Compliances by Name';
 
-                    usercontrol(NameChart; "Microsoft.Dynamics.Nav.Client.BusinessChart")
+                    // Use the new add-in that pairs with UpdateChart(...)
+                    usercontrol(NameChart; BusinessChart)
                     {
                         ApplicationArea = All;
-
-                        trigger DataPointClicked(Point: JsonObject)
-                        begin
-                            HandleNameChartClick(Point);
-                        end;
-
-                        trigger DataPointDoubleClicked(Point: JsonObject)
-                        begin
-                            HandleNameChartDoubleClick(Point);
-                        end;
 
                         trigger AddInReady()
                         begin
                             InitializeNameChart();
+                        end;
+
+                        trigger DataPointClicked(Point: JsonObject)
+                        begin
+                            HandleNameChartClick(Point);
                         end;
                     }
                 }
@@ -140,23 +132,18 @@ page 70156 "Compliance Chart"
                 {
                     Caption = 'Compliance Distribution by Category';
 
-                    usercontrol(CategoryChart; "Microsoft.Dynamics.Nav.Client.BusinessChart")
+                    usercontrol(CategoryChart; BusinessChart)
                     {
                         ApplicationArea = All;
-
-                        trigger DataPointClicked(Point: JsonObject)
-                        begin
-                            HandleCategoryChartClick(Point);
-                        end;
-
-                        trigger DataPointDoubleClicked(Point: JsonObject)
-                        begin
-                            HandleCategoryChartDoubleClick(Point);
-                        end;
 
                         trigger AddInReady()
                         begin
                             InitializeCategoryChart();
+                        end;
+
+                        trigger DataPointClicked(Point: JsonObject)
+                        begin
+                            HandleCategoryChartClick(Point);
                         end;
                     }
                 }
@@ -165,29 +152,24 @@ page 70156 "Compliance Chart"
                 {
                     Caption = 'Compliance Status Overview';
 
-                    usercontrol(StatusChart; "Microsoft.Dynamics.Nav.Client.BusinessChart")
+                    usercontrol(StatusChart; BusinessChart)
                     {
                         ApplicationArea = All;
-
-                        trigger DataPointClicked(Point: JsonObject)
-                        begin
-                            HandleStatusChartClick(Point);
-                        end;
-
-                        trigger DataPointDoubleClicked(Point: JsonObject)
-                        begin
-                            HandleStatusChartDoubleClick(Point);
-                        end;
 
                         trigger AddInReady()
                         begin
                             InitializeStatusChart();
                         end;
+
+                        trigger DataPointClicked(Point: JsonObject)
+                        begin
+                            HandleStatusChartClick(Point);
+                        end;
                     }
                 }
             }
 
-            // Summary Information
+            // ===================== Summary =====================
             group(SummaryInfo)
             {
                 Caption = 'Summary Information';
@@ -224,7 +206,6 @@ page 70156 "Compliance Chart"
                 PromotedCategory = Process;
                 PromotedIsBig = true;
                 ToolTip = 'Refresh all charts and KPIs with latest data';
-
                 trigger OnAction()
                 begin
                     RefreshAllData();
@@ -240,10 +221,9 @@ page 70156 "Compliance Chart"
                 Promoted = true;
                 PromotedCategory = Process;
                 ToolTip = 'Open the complete compliance overview list';
-
                 trigger OnAction()
                 begin
-                    PAGE.Run(70104); // Replace with actual page number for Compliance Overview
+                    PAGE.Run(70104); // Replace with your list page if different
                 end;
             }
 
@@ -255,10 +235,9 @@ page 70156 "Compliance Chart"
                 Promoted = true;
                 PromotedCategory = Process;
                 ToolTip = 'View only overdue compliance items';
-
                 trigger OnAction()
                 begin
-                    PAGE.Run(70150); // Replace with page for submitted/archive if needed
+                    PAGE.Run(70150); // Replace if needed
                 end;
             }
         }
@@ -269,12 +248,15 @@ page 70156 "Compliance Chart"
         ShowPercentagesOption: Boolean;
         DateFromFilter: Date;
         DateToFilter: Date;
+
         TotalComplianceCount: Integer;
         OverdueCount: Integer;
         ComplianceRateText: Text;
         LastUpdateText: Text;
+
         MostCommonCategoryText: Text;
         UpcomingDeadlinesText: Text;
+
         OverdueStyleExpr: Text;
         ComplianceRateStyleExpr: Text;
         UpcomingDeadlinesStyleExpr: Text;
@@ -284,7 +266,6 @@ page 70156 "Compliance Chart"
         ChartTypeOption := ChartTypeOption::"Pie Chart";
         ShowPercentagesOption := true;
 
-        // Default last 12 months
         DateToFilter := Today();
         DateFromFilter := CalcDate('-12M', Today());
 
@@ -300,60 +281,211 @@ page 70156 "Compliance Chart"
         CurrPage.Update(false);
     end;
 
-    // ================== KPI CALCULATION ==================
+    local procedure RefreshAllCharts()
+    begin
+        InitializeCategoryChart();
+        InitializeNameChart();
+        InitializeStatusChart();
+    end;
+
+    // ================== KPI CALC ==================
     local procedure CalculateKPIs()
-var
-    ComplianceOverview: Record "Compliance Overview";            // 70101
-    ComplianceArchive: Record "Compliance Overview Archive";     // 70111
-    SubmittedCount: Integer;
-    PendingInPeriod: Integer;
-    Denominator: Integer;
-    ComplianceRate: Decimal;
-begin
-    // --- Total compliances (ALL rows in 70101; no date filter) ---
-    ComplianceOverview.Reset();
-    TotalComplianceCount := ComplianceOverview.Count();
+    var
+        ComplianceOverview: Record "Compliance Overview";            // 70101
+        ComplianceArchive: Record "Compliance Overview Archive";     // 70111
+        SubmittedCount: Integer;
+        PendingInPeriod: Integer;
+        Denominator: Integer;
+        ComplianceRate: Decimal;
+    begin
+        // Guard against cleared dates (optional hardening)
+        if DateFromFilter = 0D then
+            DateFromFilter := CalcDate('-12M', Today());
+        if DateToFilter = 0D then
+            DateToFilter := Today();
 
-    // --- Overdue items (70101 where due date < today) ---
-    ComplianceOverview.Reset();
-    ComplianceOverview.SetFilter("Filing Due Date", '..%1', Today() - 1);
-    OverdueCount := ComplianceOverview.Count();
+        // Total
+        ComplianceOverview.Reset();
+        TotalComplianceCount := ComplianceOverview.Count();
 
-    // --- Compliance Rate (bounded 0..100) ---
-    // Submitted in period (70111)
-    ComplianceArchive.Reset();
-    ComplianceArchive.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
-    SubmittedCount := ComplianceArchive.Count();
+        // Overdue
+        ComplianceOverview.Reset();
+        ComplianceOverview.SetFilter("Filing Due Date", '..%1', Today() - 1);
+        OverdueCount := ComplianceOverview.Count();
 
-    // Pending in period (70101)
-    ComplianceOverview.Reset();
-    ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
-    PendingInPeriod := ComplianceOverview.Count();
+        // In-range numbers
+        ComplianceArchive.Reset();
+        ComplianceArchive.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+        SubmittedCount := ComplianceArchive.Count();
 
-    Denominator := SubmittedCount + PendingInPeriod;
-    if Denominator > 0 then begin
-        ComplianceRate := (SubmittedCount * 100.0) / Denominator;
+        ComplianceOverview.Reset();
+        ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+        PendingInPeriod := ComplianceOverview.Count();
+
+        Denominator := SubmittedCount + PendingInPeriod;
+
+        // Safe percentage (prevents divide-by-zero)
+        ComplianceRate := SafePercent(SubmittedCount, Denominator);
         ComplianceRateText := Format(ComplianceRate, 0, '<Precision,2:2><Standard Format,0>') + '%';
-    end else
-        ComplianceRateText := '0%';
 
-    // --- Styles ---
-    if OverdueCount > 0 then
-        OverdueStyleExpr := 'Unfavorable'
-    else
-        OverdueStyleExpr := 'Favorable';
+        // Styles
+        if OverdueCount > 0 then
+            OverdueStyleExpr := 'Unfavorable'
+        else
+            OverdueStyleExpr := 'Favorable';
 
-    if (Denominator > 0) and (ComplianceRate >= 90) then
-        ComplianceRateStyleExpr := 'Favorable'
-    else if (Denominator > 0) and (ComplianceRate >= 70) then
-        ComplianceRateStyleExpr := 'Ambiguous'
-    else
-        ComplianceRateStyleExpr := 'Unfavorable';
+        if (Denominator > 0) and (ComplianceRate >= 90) then
+            ComplianceRateStyleExpr := 'Favorable'
+        else if (Denominator > 0) and (ComplianceRate >= 70) then
+            ComplianceRateStyleExpr := 'Ambiguous'
+        else
+            ComplianceRateStyleExpr := 'Unfavorable';
 
-    LastUpdateText := Format(CurrentDateTime(), 0, '<Day,2>/<Month,2>/<Year4> <Hours24,2>:<Minutes,2>');
-end;
+        LastUpdateText := Format(CurrentDateTime(), 0, '<Day,2>/<Month,2>/<Year4> <Hours24,2>:<Minutes,2>');
+    end;
 
-    // ================== SUMMARY INFO ==================
+    // ================== CHART INITIALIZERS ==================
+    local procedure InitializeStatusChart()
+    var
+        Buf: Record "Business Chart Buffer" temporary;
+    begin
+        LoadComplianceByCurrentStatus(Buf);
+        Buf.UpdateChart(CurrPage.StatusChart);
+    end;
+
+    local procedure InitializeCategoryChart()
+    var
+        Buf: Record "Business Chart Buffer" temporary;
+    begin
+        LoadComplianceByCategory(Buf);
+        Buf.UpdateChart(CurrPage.CategoryChart);
+    end;
+
+    local procedure InitializeNameChart()
+    var
+        Buf: Record "Business Chart Buffer" temporary;
+    begin
+        LoadComplianceByName(Buf);
+        Buf.UpdateChart(CurrPage.NameChart);
+    end;
+
+    // ================== DATA LOADERS ==================
+    local procedure LoadComplianceByName(var B: Record "Business Chart Buffer" temporary)
+    var
+        ComplianceOverview: Record "Compliance Overview";
+        NameCount: Dictionary of [Text, Integer];
+        NameList: List of [Text];
+        ComplianceName: Text;
+        Count: Integer;
+        i: Integer;
+        CT: Enum "Business Chart Type";
+    begin
+        CT := GetChartType();
+
+        ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+
+        if ComplianceOverview.FindSet() then
+            repeat
+                ComplianceName := ComplianceOverview."Compliance Name";
+                if ComplianceName = '' then
+                    ComplianceName := 'Unnamed Compliance';
+
+                if NameCount.ContainsKey(ComplianceName) then
+                    NameCount.Set(ComplianceName, NameCount.Get(ComplianceName) + 1)
+                else
+                    NameCount.Add(ComplianceName, 1);
+            until ComplianceOverview.Next() = 0;
+
+        B.Initialize();
+        B."Chart Type" := CT;
+        B.SetXAxis('Compliance Name', B."Data Type"::String);
+        B.AddMeasure('Count', 1, B."Data Type"::Integer, CT);
+
+        NameList := NameCount.Keys();
+        for i := 1 to MinValue(NameList.Count(), 15) do begin
+            ComplianceName := NameList.Get(i);
+            Count := NameCount.Get(ComplianceName);
+            B.AddColumn(ComplianceName);
+            B.SetValue('Count', i - 1, Count);
+        end;
+    end;
+
+    local procedure LoadComplianceByCategory(var B: Record "Business Chart Buffer" temporary)
+    var
+        ComplianceOverview: Record "Compliance Overview";
+        CategoryCount: Dictionary of [Text, Integer];
+        CategoryList: List of [Text];
+        CategoryName: Text;
+        Count: Integer;
+        i: Integer;
+        CT: Enum "Business Chart Type";
+    begin
+        CT := GetChartType();
+
+        ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+
+        if ComplianceOverview.FindSet() then
+            repeat
+                CategoryName := Format(ComplianceOverview."Compliance Category");
+                if CategoryCount.ContainsKey(CategoryName) then
+                    CategoryCount.Set(CategoryName, CategoryCount.Get(CategoryName) + 1)
+                else
+                    CategoryCount.Add(CategoryName, 1);
+            until ComplianceOverview.Next() = 0;
+
+        B.Initialize();
+        B."Chart Type" := CT;
+        B.SetXAxis('Category', B."Data Type"::String);
+        B.AddMeasure('Count', 1, B."Data Type"::Integer, CT);
+
+        CategoryList := CategoryCount.Keys();
+        for i := 1 to CategoryList.Count() do begin
+            CategoryName := CategoryList.Get(i);
+            Count := CategoryCount.Get(CategoryName);
+            B.AddColumn(CategoryName);
+            B.SetValue('Count', i - 1, Count);
+        end;
+    end;
+
+    local procedure LoadComplianceByCurrentStatus(var B: Record "Business Chart Buffer" temporary)
+    var
+        ComplianceOverview: Record "Compliance Overview";
+        StatusCount: Dictionary of [Text, Integer];
+        StatusList: List of [Text];
+        StatusName: Text;
+        Count: Integer;
+        i: Integer;
+        CT: Enum "Business Chart Type";
+    begin
+        CT := GetChartType();
+
+        ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+
+        if ComplianceOverview.FindSet() then
+            repeat
+                // 'Current Status' was removed — use 'Status'
+                StatusName := Format(ComplianceOverview.Status);
+                if StatusCount.ContainsKey(StatusName) then
+                    StatusCount.Set(StatusName, StatusCount.Get(StatusName) + 1)
+                else
+                    StatusCount.Add(StatusName, 1);
+            until ComplianceOverview.Next() = 0;
+
+        B.Initialize();
+        B."Chart Type" := CT;
+        B.SetXAxis('Status', B."Data Type"::String);
+        B.AddMeasure('Count', 1, B."Data Type"::Integer, CT);
+
+        StatusList := StatusCount.Keys();
+        for i := 1 to StatusList.Count() do begin
+            StatusName := StatusList.Get(i);
+            Count := StatusCount.Get(StatusName);
+            B.AddColumn(StatusName);
+            B.SetValue('Count', i - 1, Count);
+        end;
+    end;
+
+    // ================== SUMMARY ==================
     local procedure CalculateSummaryInfo()
     var
         ComplianceOverview: Record "Compliance Overview";
@@ -363,7 +495,6 @@ end;
         UpcomingCount: Integer;
         FutureDate: Date;
     begin
-        // --- Most common category ---
         ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
 
         if ComplianceOverview.FindSet() then
@@ -383,13 +514,10 @@ end;
             end;
         end;
 
-        // --- Upcoming deadlines (next 30 days) ---
         FutureDate := CalcDate('+30D', Today());
         ComplianceOverview.Reset();
         ComplianceOverview.SetRange("Filing Due Date", Today(), FutureDate);
-        //ComplianceOverview.SetFilter("Current Status", '<>%1', ComplianceOverview."Current Status"::Submitted);
         UpcomingCount := ComplianceOverview.Count();
-
         UpcomingDeadlinesText := Format(UpcomingCount) + ' items';
 
         if UpcomingCount > 10 then
@@ -398,182 +526,6 @@ end;
             UpcomingDeadlinesStyleExpr := 'Ambiguous'
         else
             UpcomingDeadlinesStyleExpr := 'Favorable';
-    end;
-
-    // ================== CHART REFRESH ==================
-    local procedure RefreshAllCharts()
-    begin
-        InitializeCategoryChart();
-        InitializeNameChart();
-        InitializeStatusChart();
-    end;
-
-    // ================== CHARTS ==================
-    local procedure InitializeStatusChart()
-    var
-        TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
-    begin
-        LoadComplianceByCurrentStatus(TempBusinessChartBuffer);
-        TempBusinessChartBuffer.Update(CurrPage.StatusChart);
-    end;
-
-    local procedure InitializeCategoryChart()
-    var
-        TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
-    begin
-        LoadComplianceByCategory(TempBusinessChartBuffer);
-        TempBusinessChartBuffer.Update(CurrPage.CategoryChart);
-    end;
-
-    local procedure InitializeNameChart()
-    var
-        TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
-    begin
-        LoadComplianceByName(TempBusinessChartBuffer);
-        TempBusinessChartBuffer.Update(CurrPage.NameChart);
-    end;
-
-    // ================== DATA LOADERS ==================
-    local procedure LoadComplianceByName(var TempBusinessChartBuffer: Record "Business Chart Buffer" temporary)
-    var
-        ComplianceOverview: Record "Compliance Overview";
-        NameCount: Dictionary of [Text, Integer];
-        NameList: List of [Text];
-        ComplianceName: Text;
-        Count: Integer;
-        i: Integer;
-        SelectedChartType: Enum "Business Chart Type";
-    begin
-        SelectedChartType := GetChartType();
-
-        ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
-
-        if ComplianceOverview.FindSet() then
-            repeat
-                ComplianceName := ComplianceOverview."Compliance Name";
-                if ComplianceName = '' then
-                    ComplianceName := 'Unnamed Compliance';
-
-                if NameCount.ContainsKey(ComplianceName) then
-                    NameCount.Set(ComplianceName, NameCount.Get(ComplianceName) + 1)
-                else
-                    NameCount.Add(ComplianceName, 1);
-            until ComplianceOverview.Next() = 0;
-
-        TempBusinessChartBuffer.Initialize();
-        TempBusinessChartBuffer."Chart Type" := SelectedChartType;
-        TempBusinessChartBuffer.SetXAxis('Compliance Name', TempBusinessChartBuffer."Data Type"::String);
-        TempBusinessChartBuffer.AddMeasure('Count', 1, TempBusinessChartBuffer."Data Type"::Integer, SelectedChartType);
-
-        NameList := NameCount.Keys();
-        for i := 1 to MinValue(NameList.Count(), 15) do begin
-            ComplianceName := NameList.Get(i);
-            Count := NameCount.Get(ComplianceName);
-            TempBusinessChartBuffer.AddColumn(ComplianceName);
-            TempBusinessChartBuffer.SetValue('Count', i - 1, Count);
-        end;
-    end;
-
-    local procedure LoadComplianceByCategory(var TempBusinessChartBuffer: Record "Business Chart Buffer" temporary)
-    var
-        ComplianceOverview: Record "Compliance Overview";
-        CategoryCount: Dictionary of [Text, Integer];
-        CategoryList: List of [Text];
-        CategoryName: Text;
-        Count: Integer;
-        i: Integer;
-        SelectedChartType: Enum "Business Chart Type";
-    begin
-        SelectedChartType := GetChartType();
-
-        ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
-
-        if ComplianceOverview.FindSet() then
-            repeat
-                CategoryName := Format(ComplianceOverview."Compliance Category");
-                if CategoryCount.ContainsKey(CategoryName) then
-                    CategoryCount.Set(CategoryName, CategoryCount.Get(CategoryName) + 1)
-                else
-                    CategoryCount.Add(CategoryName, 1);
-            until ComplianceOverview.Next() = 0;
-
-        TempBusinessChartBuffer.Initialize();
-        TempBusinessChartBuffer."Chart Type" := SelectedChartType;
-        TempBusinessChartBuffer.SetXAxis('Category', TempBusinessChartBuffer."Data Type"::String);
-        TempBusinessChartBuffer.AddMeasure('Count', 1, TempBusinessChartBuffer."Data Type"::Integer, SelectedChartType);
-
-        CategoryList := CategoryCount.Keys();
-        for i := 1 to CategoryList.Count() do begin
-            CategoryName := CategoryList.Get(i);
-            Count := CategoryCount.Get(CategoryName);
-            TempBusinessChartBuffer.AddColumn(CategoryName);
-            TempBusinessChartBuffer.SetValue('Count', i - 1, Count);
-        end;
-    end;
-
-    local procedure LoadComplianceByCurrentStatus(var TempBusinessChartBuffer: Record "Business Chart Buffer" temporary)
-    var
-        ComplianceOverview: Record "Compliance Overview";
-        StatusCount: Dictionary of [Text, Integer];
-        StatusList: List of [Text];
-        StatusName: Text;
-        Count: Integer;
-        i: Integer;
-    begin
-        ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
-
-        if ComplianceOverview.FindSet() then
-            repeat
-                //StatusName := Format(ComplianceOverview."Current Status");
-                if StatusCount.ContainsKey(StatusName) then
-                    StatusCount.Set(StatusName, StatusCount.Get(StatusName) + 1)
-                else
-                    StatusCount.Add(StatusName, 1);
-            until ComplianceOverview.Next() = 0;
-
-        TempBusinessChartBuffer.Initialize();
-        TempBusinessChartBuffer."Chart Type" := GetChartType();
-        TempBusinessChartBuffer.SetXAxis('Status', TempBusinessChartBuffer."Data Type"::String);
-        TempBusinessChartBuffer.AddMeasure('Count', 1, TempBusinessChartBuffer."Data Type"::Integer, GetChartType());
-
-        StatusList := StatusCount.Keys();
-        for i := 1 to StatusList.Count() do begin
-            StatusName := StatusList.Get(i);
-            Count := StatusCount.Get(StatusName);
-            TempBusinessChartBuffer.AddColumn(StatusName);
-            TempBusinessChartBuffer.SetValue('Count', i - 1, Count);
-        end;
-    end;
-
-    // ================== HELPERS ==================
-    local procedure GetChartType(): Enum "Business Chart Type"
-    var
-        TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
-    begin
-        case ChartTypeOption of
-            ChartTypeOption::"Pie Chart":
-                exit(TempBusinessChartBuffer."Chart Type"::Pie);
-            ChartTypeOption::"Doughnut Chart":
-                exit(TempBusinessChartBuffer."Chart Type"::Doughnut);
-            ChartTypeOption::"Column Chart":
-                exit(TempBusinessChartBuffer."Chart Type"::Column);
-            ChartTypeOption::"Line Chart":
-                exit(TempBusinessChartBuffer."Chart Type"::Line);
-            ChartTypeOption::"Area Chart":
-                exit(TempBusinessChartBuffer."Chart Type"::Area);
-            ChartTypeOption::"Point Chart":
-                exit(TempBusinessChartBuffer."Chart Type"::Point);
-            else
-                exit(TempBusinessChartBuffer."Chart Type"::Pie);
-        end;
-    end;
-
-    local procedure MinValue(Value1: Integer; Value2: Integer): Integer
-    begin
-        if Value1 < Value2 then
-            exit(Value1)
-        else
-            exit(Value2);
     end;
 
     // ================== CLICK HANDLERS ==================
@@ -586,7 +538,7 @@ end;
         if Point.Get('AxisLabel', NameToken) then begin
             ComplianceName := NameToken.AsValue().AsText();
             ComplianceOverview.SetRange("Compliance Name", ComplianceName);
-            PAGE.RunModal(70104, ComplianceOverview); // Replace with actual list page
+            PAGE.RunModal(70104, ComplianceOverview); // Replace with your list page if needed
         end;
     end;
 
@@ -612,23 +564,37 @@ end;
         end;
     end;
 
-    local procedure HandleNameChartDoubleClick(Point: JsonObject)
+    // ================== HELPERS ==================
+    local procedure GetChartType(): Enum "Business Chart Type"
+    var
+        Tmp: Record "Business Chart Buffer" temporary;
     begin
-        Message('Double-clicked on compliance name chart');
+        case ChartTypeOption of
+            ChartTypeOption::"Pie Chart":      exit(Tmp."Chart Type"::Pie);
+            ChartTypeOption::"Doughnut Chart": exit(Tmp."Chart Type"::Doughnut);
+            ChartTypeOption::"Column Chart":   exit(Tmp."Chart Type"::Column);
+            ChartTypeOption::"Line Chart":     exit(Tmp."Chart Type"::Line);
+            ChartTypeOption::"Area Chart":     exit(Tmp."Chart Type"::Area);
+            ChartTypeOption::"Point Chart":    exit(Tmp."Chart Type"::Point);
+            else                               exit(Tmp."Chart Type"::Column);
+        end;
     end;
 
-    local procedure HandleCategoryChartDoubleClick(Point: JsonObject)
+    local procedure MinValue(Value1: Integer; Value2: Integer): Integer
     begin
-        Message('Double-clicked on category chart');
+        if Value1 < Value2 then
+            exit(Value1)
+        else
+            exit(Value2);
     end;
 
-    local procedure HandleStatusChartDoubleClick(Point: JsonObject)
+    local procedure SafePercent(Numerator: Integer; Denominator: Integer): Decimal
     begin
-        Message('Double-clicked on status chart');
+        if Denominator = 0 then
+            exit(0);
+        exit((Numerator * 100.0) / Denominator);
     end;
 }
-
-
 
 
 // page 70156 "Compliance Chart"
@@ -670,7 +636,7 @@ end;
 //                     ApplicationArea = All;
 //                     Caption = 'Compliance Rate';
 //                     StyleExpr = ComplianceRateStyleExpr;
-//                     ToolTip = 'Percentage of compliances that are filed or completed on time';
+//                     ToolTip = 'Percentage of compliances that have been submitted';
 //                     Editable = false;
 //                 }
 
@@ -876,8 +842,7 @@ end;
 
 //                 trigger OnAction()
 //                 begin
-//                     // Navigate to compliance list page - adjust page number as needed
-//                     PAGE.Run(70104); // Replace with actual page number
+//                     PAGE.Run(70104); // Replace with actual page number for Compliance Overview
 //                 end;
 //             }
 
@@ -892,7 +857,7 @@ end;
 
 //                 trigger OnAction()
 //                 begin
-//                     PAGE.Run(70150);
+//                     PAGE.Run(70150); // Replace with page for submitted/archive if needed
 //                 end;
 //             }
 //         }
@@ -918,14 +883,14 @@ end;
 //         ChartTypeOption := ChartTypeOption::"Pie Chart";
 //         ShowPercentagesOption := true;
 
-//         // Set default date filters (last 12 months)
+//         // Default last 12 months
 //         DateToFilter := Today();
 //         DateFromFilter := CalcDate('-12M', Today());
 
 //         RefreshAllData();
 //     end;
 
-//     // Comprehensive data refresh
+//     // ================== DATA REFRESH ==================
 //     local procedure RefreshAllData()
 //     begin
 //         CalculateKPIs();
@@ -934,82 +899,81 @@ end;
 //         CurrPage.Update(false);
 //     end;
 
-//     // Calculate Key Performance Indicators
+//     // ================== KPI CALCULATION ==================
 //     local procedure CalculateKPIs()
-//     var
-//         ComplianceArchive: Record "Compliance Overview Archive";
-//         FiledCount: Integer;
-//         ComplianceRate: Decimal;
-//     begin
-//         TotalComplianceCount := 0;
-//         OverdueCount := 0;
-//         FiledCount := 0;
+// var
+//     ComplianceOverview: Record "Compliance Overview";            // 70101
+//     ComplianceArchive: Record "Compliance Overview Archive";     // 70111
+//     SubmittedCount: Integer;
+//     PendingInPeriod: Integer;
+//     Denominator: Integer;
+//     ComplianceRate: Decimal;
+// begin
+//     // --- Total compliances (ALL rows in 70101; no date filter) ---
+//     ComplianceOverview.Reset();
+//     TotalComplianceCount := ComplianceOverview.Count();
 
-//         ComplianceArchive.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+//     // --- Overdue items (70101 where due date < today) ---
+//     ComplianceOverview.Reset();
+//     ComplianceOverview.SetFilter("Filing Due Date", '..%1', Today() - 1);
+//     OverdueCount := ComplianceOverview.Count();
 
-//         if ComplianceArchive.FindSet() then
-//             repeat
-//                 TotalComplianceCount += 1;
+//     // --- Compliance Rate (bounded 0..100) ---
+//     // Submitted in period (70111)
+//     ComplianceArchive.Reset();
+//     ComplianceArchive.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+//     SubmittedCount := ComplianceArchive.Count();
 
-//                 // Count overdue items
-//                 if (ComplianceArchive."Filing Due Date" <> 0D) and
-//                    (ComplianceArchive."Filing Due Date" < Today()) and
-//                    (ComplianceArchive."Current Status" in [ComplianceArchive."Current Status"::Active, ComplianceArchive."Current Status"::InProgress]) then
-//                     OverdueCount += 1;
+//     // Pending in period (70101)
+//     ComplianceOverview.Reset();
+//     ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+//     PendingInPeriod := ComplianceOverview.Count();
 
-//                 // Count filed items
-//                 if ComplianceArchive."Current Status" = ComplianceArchive."Current Status"::Filed then
-//                     FiledCount += 1;
-//             until ComplianceArchive.Next() = 0;
+//     Denominator := SubmittedCount + PendingInPeriod;
+//     if Denominator > 0 then begin
+//         ComplianceRate := (SubmittedCount * 100.0) / Denominator;
+//         ComplianceRateText := Format(ComplianceRate, 0, '<Precision,2:2><Standard Format,0>') + '%';
+//     end else
+//         ComplianceRateText := '0%';
 
-//         // Calculate compliance rate
-//         if TotalComplianceCount > 0 then begin
-//             ComplianceRate := (FiledCount / TotalComplianceCount) * 100;
-//             ComplianceRateText := Format(ComplianceRate, 0, '<Precision,2:2><Standard Format,0>') + '%';
-//         end else begin
-//             ComplianceRateText := '0%';
-//         end;
+//     // --- Styles ---
+//     if OverdueCount > 0 then
+//         OverdueStyleExpr := 'Unfavorable'
+//     else
+//         OverdueStyleExpr := 'Favorable';
 
-//         // Set style expressions based on values
-//         if OverdueCount > 0 then
-//             OverdueStyleExpr := 'Unfavorable'
-//         else
-//             OverdueStyleExpr := 'Favorable';
+//     if (Denominator > 0) and (ComplianceRate >= 90) then
+//         ComplianceRateStyleExpr := 'Favorable'
+//     else if (Denominator > 0) and (ComplianceRate >= 70) then
+//         ComplianceRateStyleExpr := 'Ambiguous'
+//     else
+//         ComplianceRateStyleExpr := 'Unfavorable';
 
-//         if ComplianceRate >= 90 then
-//             ComplianceRateStyleExpr := 'Favorable'
-//         else if ComplianceRate >= 70 then
-//             ComplianceRateStyleExpr := 'Ambiguous'
-//         else
-//             ComplianceRateStyleExpr := 'Unfavorable';
+//     LastUpdateText := Format(CurrentDateTime(), 0, '<Day,2>/<Month,2>/<Year4> <Hours24,2>:<Minutes,2>');
+// end;
 
-//         LastUpdateText := Format(CurrentDateTime(), 0, '<Day,2>/<Month,2>/<Year4> <Hours24,2>:<Minutes,2>');
-//     end;
-
-//     // Calculate summary information
+//     // ================== SUMMARY INFO ==================
 //     local procedure CalculateSummaryInfo()
 //     var
-//         ComplianceArchive: Record "Compliance Overview Archive";
+//         ComplianceOverview: Record "Compliance Overview";
 //         CategoryCount: Dictionary of [Text, Integer];
 //         CategoryName: Text;
 //         MaxCount: Integer;
 //         UpcomingCount: Integer;
 //         FutureDate: Date;
 //     begin
-//         // Find most common category
-//         ComplianceArchive.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+//         // --- Most common category ---
+//         ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
 
-//         if ComplianceArchive.FindSet() then
+//         if ComplianceOverview.FindSet() then
 //             repeat
-//                 CategoryName := Format(ComplianceArchive."Compliance Category");
-
+//                 CategoryName := Format(ComplianceOverview."Compliance Category");
 //                 if CategoryCount.ContainsKey(CategoryName) then
 //                     CategoryCount.Set(CategoryName, CategoryCount.Get(CategoryName) + 1)
 //                 else
 //                     CategoryCount.Add(CategoryName, 1);
-//             until ComplianceArchive.Next() = 0;
+//             until ComplianceOverview.Next() = 0;
 
-//         // Find category with highest count
 //         MaxCount := 0;
 //         foreach CategoryName in CategoryCount.Keys() do begin
 //             if CategoryCount.Get(CategoryName) > MaxCount then begin
@@ -1018,12 +982,12 @@ end;
 //             end;
 //         end;
 
-//         // Count upcoming deadlines (next 30 days)
+//         // --- Upcoming deadlines (next 30 days) ---
 //         FutureDate := CalcDate('+30D', Today());
-//         ComplianceArchive.Reset();
-//         ComplianceArchive.SetRange("Filing Due Date", Today(), FutureDate);
-//         ComplianceArchive.SetFilter("Current Status", '<>%1', ComplianceArchive."Current Status"::Filed);
-//         UpcomingCount := ComplianceArchive.Count();
+//         ComplianceOverview.Reset();
+//         ComplianceOverview.SetRange("Filing Due Date", Today(), FutureDate);
+//         //ComplianceOverview.SetFilter("Current Status", '<>%1', ComplianceOverview."Current Status"::Submitted);
+//         UpcomingCount := ComplianceOverview.Count();
 
 //         UpcomingDeadlinesText := Format(UpcomingCount) + ' items';
 
@@ -1035,7 +999,7 @@ end;
 //             UpcomingDeadlinesStyleExpr := 'Favorable';
 //     end;
 
-//     // Refresh all charts
+//     // ================== CHART REFRESH ==================
 //     local procedure RefreshAllCharts()
 //     begin
 //         InitializeCategoryChart();
@@ -1043,17 +1007,185 @@ end;
 //         InitializeStatusChart();
 //     end;
 
-//     // Chart click handlers with actual functionality
+//     // ================== CHARTS ==================
+//     local procedure InitializeStatusChart()
+//     var
+//         TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
+//     begin
+//         LoadComplianceByCurrentStatus(TempBusinessChartBuffer);
+//         TempBusinessChartBuffer.Update(CurrPage.StatusChart);
+//     end;
+
+//     local procedure InitializeCategoryChart()
+//     var
+//         TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
+//     begin
+//         LoadComplianceByCategory(TempBusinessChartBuffer);
+//         TempBusinessChartBuffer.Update(CurrPage.CategoryChart);
+//     end;
+
+//     local procedure InitializeNameChart()
+//     var
+//         TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
+//     begin
+//         LoadComplianceByName(TempBusinessChartBuffer);
+//         TempBusinessChartBuffer.Update(CurrPage.NameChart);
+//     end;
+
+//     // ================== DATA LOADERS ==================
+//     local procedure LoadComplianceByName(var TempBusinessChartBuffer: Record "Business Chart Buffer" temporary)
+//     var
+//         ComplianceOverview: Record "Compliance Overview";
+//         NameCount: Dictionary of [Text, Integer];
+//         NameList: List of [Text];
+//         ComplianceName: Text;
+//         Count: Integer;
+//         i: Integer;
+//         SelectedChartType: Enum "Business Chart Type";
+//     begin
+//         SelectedChartType := GetChartType();
+
+//         ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+
+//         if ComplianceOverview.FindSet() then
+//             repeat
+//                 ComplianceName := ComplianceOverview."Compliance Name";
+//                 if ComplianceName = '' then
+//                     ComplianceName := 'Unnamed Compliance';
+
+//                 if NameCount.ContainsKey(ComplianceName) then
+//                     NameCount.Set(ComplianceName, NameCount.Get(ComplianceName) + 1)
+//                 else
+//                     NameCount.Add(ComplianceName, 1);
+//             until ComplianceOverview.Next() = 0;
+
+//         TempBusinessChartBuffer.Initialize();
+//         TempBusinessChartBuffer."Chart Type" := SelectedChartType;
+//         TempBusinessChartBuffer.SetXAxis('Compliance Name', TempBusinessChartBuffer."Data Type"::String);
+//         TempBusinessChartBuffer.AddMeasure('Count', 1, TempBusinessChartBuffer."Data Type"::Integer, SelectedChartType);
+
+//         NameList := NameCount.Keys();
+//         for i := 1 to MinValue(NameList.Count(), 15) do begin
+//             ComplianceName := NameList.Get(i);
+//             Count := NameCount.Get(ComplianceName);
+//             TempBusinessChartBuffer.AddColumn(ComplianceName);
+//             TempBusinessChartBuffer.SetValue('Count', i - 1, Count);
+//         end;
+//     end;
+
+//     local procedure LoadComplianceByCategory(var TempBusinessChartBuffer: Record "Business Chart Buffer" temporary)
+//     var
+//         ComplianceOverview: Record "Compliance Overview";
+//         CategoryCount: Dictionary of [Text, Integer];
+//         CategoryList: List of [Text];
+//         CategoryName: Text;
+//         Count: Integer;
+//         i: Integer;
+//         SelectedChartType: Enum "Business Chart Type";
+//     begin
+//         SelectedChartType := GetChartType();
+
+//         ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+
+//         if ComplianceOverview.FindSet() then
+//             repeat
+//                 CategoryName := Format(ComplianceOverview."Compliance Category");
+//                 if CategoryCount.ContainsKey(CategoryName) then
+//                     CategoryCount.Set(CategoryName, CategoryCount.Get(CategoryName) + 1)
+//                 else
+//                     CategoryCount.Add(CategoryName, 1);
+//             until ComplianceOverview.Next() = 0;
+
+//         TempBusinessChartBuffer.Initialize();
+//         TempBusinessChartBuffer."Chart Type" := SelectedChartType;
+//         TempBusinessChartBuffer.SetXAxis('Category', TempBusinessChartBuffer."Data Type"::String);
+//         TempBusinessChartBuffer.AddMeasure('Count', 1, TempBusinessChartBuffer."Data Type"::Integer, SelectedChartType);
+
+//         CategoryList := CategoryCount.Keys();
+//         for i := 1 to CategoryList.Count() do begin
+//             CategoryName := CategoryList.Get(i);
+//             Count := CategoryCount.Get(CategoryName);
+//             TempBusinessChartBuffer.AddColumn(CategoryName);
+//             TempBusinessChartBuffer.SetValue('Count', i - 1, Count);
+//         end;
+//     end;
+
+//     local procedure LoadComplianceByCurrentStatus(var TempBusinessChartBuffer: Record "Business Chart Buffer" temporary)
+//     var
+//         ComplianceOverview: Record "Compliance Overview";
+//         StatusCount: Dictionary of [Text, Integer];
+//         StatusList: List of [Text];
+//         StatusName: Text;
+//         Count: Integer;
+//         i: Integer;
+//     begin
+//         ComplianceOverview.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
+
+//         if ComplianceOverview.FindSet() then
+//             repeat
+//                 //StatusName := Format(ComplianceOverview."Current Status");
+//                 if StatusCount.ContainsKey(StatusName) then
+//                     StatusCount.Set(StatusName, StatusCount.Get(StatusName) + 1)
+//                 else
+//                     StatusCount.Add(StatusName, 1);
+//             until ComplianceOverview.Next() = 0;
+
+//         TempBusinessChartBuffer.Initialize();
+//         TempBusinessChartBuffer."Chart Type" := GetChartType();
+//         TempBusinessChartBuffer.SetXAxis('Status', TempBusinessChartBuffer."Data Type"::String);
+//         TempBusinessChartBuffer.AddMeasure('Count', 1, TempBusinessChartBuffer."Data Type"::Integer, GetChartType());
+
+//         StatusList := StatusCount.Keys();
+//         for i := 1 to StatusList.Count() do begin
+//             StatusName := StatusList.Get(i);
+//             Count := StatusCount.Get(StatusName);
+//             TempBusinessChartBuffer.AddColumn(StatusName);
+//             TempBusinessChartBuffer.SetValue('Count', i - 1, Count);
+//         end;
+//     end;
+
+//     // ================== HELPERS ==================
+//     local procedure GetChartType(): Enum "Business Chart Type"
+//     var
+//         TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
+//     begin
+//         case ChartTypeOption of
+//             ChartTypeOption::"Pie Chart":
+//                 exit(TempBusinessChartBuffer."Chart Type"::Pie);
+//             ChartTypeOption::"Doughnut Chart":
+//                 exit(TempBusinessChartBuffer."Chart Type"::Doughnut);
+//             ChartTypeOption::"Column Chart":
+//                 exit(TempBusinessChartBuffer."Chart Type"::Column);
+//             ChartTypeOption::"Line Chart":
+//                 exit(TempBusinessChartBuffer."Chart Type"::Line);
+//             ChartTypeOption::"Area Chart":
+//                 exit(TempBusinessChartBuffer."Chart Type"::Area);
+//             ChartTypeOption::"Point Chart":
+//                 exit(TempBusinessChartBuffer."Chart Type"::Point);
+//             else
+//                 exit(TempBusinessChartBuffer."Chart Type"::Pie);
+//         end;
+//     end;
+
+//     local procedure MinValue(Value1: Integer; Value2: Integer): Integer
+//     begin
+//         if Value1 < Value2 then
+//             exit(Value1)
+//         else
+//             exit(Value2);
+//     end;
+
+//     // ================== CLICK HANDLERS ==================
 //     local procedure HandleNameChartClick(Point: JsonObject)
 //     var
-//         ComplianceArchive: Record "Compliance Overview Archive";
+//         ComplianceOverview: Record "Compliance Overview";
 //         ComplianceName: Text;
 //         NameToken: JsonToken;
 //     begin
 //         if Point.Get('AxisLabel', NameToken) then begin
 //             ComplianceName := NameToken.AsValue().AsText();
-//             ComplianceArchive.SetRange("Compliance Name", ComplianceName);
-//             PAGE.RunModal(50000, ComplianceArchive); // Replace with actual page number
+//             ComplianceOverview.SetRange("Compliance Name", ComplianceName);
+//             PAGE.RunModal(70104, ComplianceOverview); // Replace with actual list page
 //         end;
 //     end;
 
@@ -1093,181 +1225,6 @@ end;
 //     begin
 //         Message('Double-clicked on status chart');
 //     end;
-
-
-
-//     // Convert Option to Business Chart Type Enum
-//     local procedure GetChartType(): Enum "Business Chart Type"
-//     var
-//         TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
-//     begin
-//         case ChartTypeOption of
-//             ChartTypeOption::"Pie Chart":
-//                 exit(TempBusinessChartBuffer."Chart Type"::Pie);
-//             ChartTypeOption::"Doughnut Chart":
-//                 exit(TempBusinessChartBuffer."Chart Type"::Doughnut);
-//             ChartTypeOption::"Column Chart":
-//                 exit(TempBusinessChartBuffer."Chart Type"::Column);
-//             ChartTypeOption::"Line Chart":
-//                 exit(TempBusinessChartBuffer."Chart Type"::Line);
-//             ChartTypeOption::"Area Chart":
-//                 exit(TempBusinessChartBuffer."Chart Type"::Area);
-//             ChartTypeOption::"Point Chart":
-//                 exit(TempBusinessChartBuffer."Chart Type"::Point);
-//             else
-//                 exit(TempBusinessChartBuffer."Chart Type"::Pie);
-//         end;
-//     end;
-
-//     // Initialize Status Chart (now functional)
-//     local procedure InitializeStatusChart()
-//     var
-//         TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
-//     begin
-//         LoadComplianceByCurrentStatus(TempBusinessChartBuffer);
-//         TempBusinessChartBuffer.Update(CurrPage.StatusChart);
-//     end;
-
-//     // Initialize Category Chart
-//     local procedure InitializeCategoryChart()
-//     var
-//         TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
-//     begin
-//         LoadComplianceByCategory(TempBusinessChartBuffer);
-//         TempBusinessChartBuffer.Update(CurrPage.CategoryChart);
-//     end;
-
-//     // Initialize Name Chart
-//     local procedure InitializeNameChart()
-//     var
-//         TempBusinessChartBuffer: Record "Business Chart Buffer" temporary;
-//     begin
-//         LoadComplianceByName(TempBusinessChartBuffer);
-//         TempBusinessChartBuffer.Update(CurrPage.NameChart);
-//     end;
-
-//     // Updated chart loading methods with date filtering
-//     local procedure LoadComplianceByName(var TempBusinessChartBuffer: Record "Business Chart Buffer" temporary)
-//     var
-//         ComplianceArchive: Record "Compliance Overview Archive";
-//         NameCount: Dictionary of [Text, Integer];
-//         NameList: List of [Text];
-//         ComplianceName: Text;
-//         Count: Integer;
-//         i: Integer;
-//         SelectedChartType: Enum "Business Chart Type";
-//     begin
-//         SelectedChartType := GetChartType();
-
-//         // Apply date filters
-//         ComplianceArchive.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
-
-//         if ComplianceArchive.FindSet() then
-//             repeat
-//                 ComplianceName := ComplianceArchive."Compliance Name";
-//                 if ComplianceName = '' then
-//                     ComplianceName := 'Unnamed Compliance';
-
-//                 if NameCount.ContainsKey(ComplianceName) then
-//                     NameCount.Set(ComplianceName, NameCount.Get(ComplianceName) + 1)
-//                 else
-//                     NameCount.Add(ComplianceName, 1);
-//             until ComplianceArchive.Next() = 0;
-
-//         TempBusinessChartBuffer.Initialize();
-//         TempBusinessChartBuffer."Chart Type" := SelectedChartType;
-//         TempBusinessChartBuffer.SetXAxis('Compliance Name', TempBusinessChartBuffer."Data Type"::String);
-//         TempBusinessChartBuffer.AddMeasure('Count', 1, TempBusinessChartBuffer."Data Type"::Integer, SelectedChartType);
-
-//         NameList := NameCount.Keys();
-//         for i := 1 to MinValue(NameList.Count(), 15) do begin
-//             ComplianceName := NameList.Get(i);
-//             Count := NameCount.Get(ComplianceName);
-//             TempBusinessChartBuffer.AddColumn(ComplianceName);
-//             TempBusinessChartBuffer.SetValue('Count', i - 1, Count);
-//         end;
-//     end;
-
-//     local procedure LoadComplianceByCategory(var TempBusinessChartBuffer: Record "Business Chart Buffer" temporary)
-//     var
-//         ComplianceArchive: Record "Compliance Overview Archive";
-//         CategoryCount: Dictionary of [Text, Integer];
-//         CategoryList: List of [Text];
-//         CategoryName: Text;
-//         Count: Integer;
-//         i: Integer;
-//         SelectedChartType: Enum "Business Chart Type";
-//     begin
-//         SelectedChartType := GetChartType();
-
-//         // Apply date filters
-//         ComplianceArchive.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
-
-//         if ComplianceArchive.FindSet() then
-//             repeat
-//                 CategoryName := Format(ComplianceArchive."Compliance Category");
-
-//                 if CategoryCount.ContainsKey(CategoryName) then
-//                     CategoryCount.Set(CategoryName, CategoryCount.Get(CategoryName) + 1)
-//                 else
-//                     CategoryCount.Add(CategoryName, 1);
-//             until ComplianceArchive.Next() = 0;
-
-//         TempBusinessChartBuffer.Initialize();
-//         TempBusinessChartBuffer."Chart Type" := SelectedChartType;
-//         TempBusinessChartBuffer.SetXAxis('Category', TempBusinessChartBuffer."Data Type"::String);
-//         TempBusinessChartBuffer.AddMeasure('Count', 1, TempBusinessChartBuffer."Data Type"::Integer, SelectedChartType);
-
-//         CategoryList := CategoryCount.Keys();
-//         for i := 1 to CategoryList.Count() do begin
-//             CategoryName := CategoryList.Get(i);
-//             Count := CategoryCount.Get(CategoryName);
-//             TempBusinessChartBuffer.AddColumn(CategoryName);
-//             TempBusinessChartBuffer.SetValue('Count', i - 1, Count);
-//         end;
-//     end;
-
-//     local procedure LoadComplianceByCurrentStatus(var TempBusinessChartBuffer: Record "Business Chart Buffer" temporary)
-//     var
-//         ComplianceArchive: Record "Compliance Overview Archive";
-//         StatusCount: Dictionary of [Text, Integer];
-//         StatusList: List of [Text];
-//         StatusName: Text;
-//         Count: Integer;
-//         i: Integer;
-//     begin
-//         // Apply date filters
-//         ComplianceArchive.SetFilter("Filing Due Date", '%1..%2', DateFromFilter, DateToFilter);
-
-//         if ComplianceArchive.FindSet() then
-//             repeat
-//                 StatusName := Format(ComplianceArchive."Current Status");
-
-//                 if StatusCount.ContainsKey(StatusName) then
-//                     StatusCount.Set(StatusName, StatusCount.Get(StatusName) + 1)
-//                 else
-//                     StatusCount.Add(StatusName, 1);
-//             until ComplianceArchive.Next() = 0;
-
-//         TempBusinessChartBuffer.Initialize();
-//         TempBusinessChartBuffer."Chart Type" := GetChartType();
-//         TempBusinessChartBuffer.SetXAxis('Status', TempBusinessChartBuffer."Data Type"::String);
-//         TempBusinessChartBuffer.AddMeasure('Count', 1, TempBusinessChartBuffer."Data Type"::Integer, GetChartType());
-
-//         StatusList := StatusCount.Keys();
-//         for i := 1 to StatusList.Count() do begin
-//             StatusName := StatusList.Get(i);
-//             Count := StatusCount.Get(StatusName);
-//             TempBusinessChartBuffer.AddColumn(StatusName);
-//             TempBusinessChartBuffer.SetValue('Count', i - 1, Count);
-//         end;
-//     end;
-
-//     local procedure MinValue(Value1: Integer; Value2: Integer): Integer
-//     begin
-//         if Value1 < Value2 then
-//             exit(Value1)
-//         else
-//             exit(Value2);
-//     end;
 // }
+
+

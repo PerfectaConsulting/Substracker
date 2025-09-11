@@ -384,6 +384,8 @@ end;
 
             NormPageName = 'Open Compliance Chart':
                 PAGE.Run(PAGE::"Compliance Chart");
+                
+
 
             NormPageName = 'Auto Create All Number Series':
                 begin
