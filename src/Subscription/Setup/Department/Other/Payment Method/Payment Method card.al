@@ -13,29 +13,45 @@ page 50129 "Custom Payment Method Card"
             {
                 Caption = 'General Information';
 
+                field("Code"; Rec."Code")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Specifies the unique code for the payment method.';
+                    ShowMandatory = true;
+                }
+
                 field(Name; Rec.Name)
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the name of the payment method.';
                     ShowMandatory = true;
                 }
+
                 field(Type; Rec.Type)
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the type of the payment method.';
                     ShowMandatory = true;
                 }
+
                 field(Description; Rec.Description)
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the description of the payment method.';
                     MultiLine = true;
                 }
-                field("Card Image"; Rec."Card Image")
+
+                field("Expires At"; Rec."Expires At")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Upload an image for this payment method card.';
+                    ToolTip = 'Specifies when this payment method expires.';
                 }
+            }
+
+            group(Management)
+            {
+                Caption = 'Management';
+
                 field("Managed By"; Rec."Managed By")
                 {
                     ApplicationArea = All;
@@ -43,36 +59,28 @@ page 50129 "Custom Payment Method Card"
 
                     trigger OnValidate()
                     begin
-                        CurrPage.Update(); // Refresh the FlowField
-                    end;
-
-                    trigger OnLookup(var Text: Text): Boolean
-                    var
-                        EmployeeExt: Record "Employee Ext";
-                        EmployeeExtList: Page "Employee Ext List";
-                    begin
-                        EmployeeExt.SetRange(Status, EmployeeExt.Status::Active);
-                        EmployeeExt.SetRange(Blocked, false);
-                        EmployeeExtList.SetTableView(EmployeeExt);
-                        EmployeeExtList.LookupMode(true);
-                        if EmployeeExtList.RunModal() = Action::LookupOK then begin
-                            EmployeeExtList.GetRecord(EmployeeExt);
-                            Rec."Managed By" := EmployeeExt."No.";
-                            CurrPage.Update();
-                        end;
+                        CurrPage.Update(true);
                     end;
                 }
+
                 field("Employee Name"; Rec."Employee Name")
                 {
                     ApplicationArea = All;
                     Caption = 'Employee Name';
                     ToolTip = 'Shows the full name of the selected employee.';
                     Style = StandardAccent;
+                    Editable = false;
                 }
-                field("Expires At"; Rec."Expires At")
+            }
+
+            group(ImageGroup)
+            {
+                Caption = 'Card Image';
+
+                field("Card Image"; Rec."Card Image")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies when this payment method expires.';
+                    ToolTip = 'Upload an image for this payment method card.';
                 }
             }
         }
@@ -100,7 +108,7 @@ page 50129 "Custom Payment Method Card"
                         Rec."Card Image".ImportStream(InStr, FileName);
                         if not Rec.Modify(true) then
                             Rec.Insert(true);
-                        CurrPage.Update();
+                        CurrPage.Update(false);
                         Message('Image imported successfully.');
                     end;
                 end;
@@ -123,7 +131,7 @@ page 50129 "Custom Payment Method Card"
                     FileName: Text;
                 begin
                     if Rec."Card Image".HasValue then begin
-                        FileName := 'PaymentMethodImage_' + Rec.Name + '.jpg';
+                        FileName := 'PaymentMethodImage_' + Rec."Code" + '.jpg';
                         TempBlob.CreateOutStream(OutStr);
                         Rec."Card Image".ExportStream(OutStr);
                         TempBlob.CreateInStream(InStr);
@@ -149,7 +157,7 @@ page 50129 "Custom Payment Method Card"
                         if Confirm('Do you want to delete the image?') then begin
                             Clear(Rec."Card Image");
                             Rec.Modify(true);
-                            CurrPage.Update();
+                            CurrPage.Update(false);
                             Message('Image deleted successfully.');
                         end;
                     end else
@@ -176,7 +184,7 @@ page 50129 "Custom Payment Method Card"
                     if Rec."Managed By" <> '' then begin
                         if EmployeeExt.Get(Rec."Managed By") then begin
                             EmployeeExtCard.SetRecord(EmployeeExt);
-                            EmployeeExtCard.Run();
+                            EmployeeExtCard.RunModal();
                         end else
                             Message('Employee %1 not found.', Rec."Managed By");
                     end;
@@ -184,14 +192,4 @@ page 50129 "Custom Payment Method Card"
             }
         }
     }
-
-    trigger OnAfterGetRecord()
-    begin
-        CurrPage.Update();
-    end;
-
-    trigger OnAfterGetCurrRecord()
-    begin
-        CurrPage.Update();
-    end;
 }

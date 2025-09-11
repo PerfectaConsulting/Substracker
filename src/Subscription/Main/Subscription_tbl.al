@@ -10,7 +10,7 @@ table 50110 "Subscription"
             Caption = 'No.';
             DataClassification = CustomerContent;
 
-            trigger OnValidate()
+             trigger OnValidate()
     var
         InitialSetup: Record "Initial Setup";
         NoSeriesMgt: Codeunit "No. Series";
@@ -63,7 +63,6 @@ table 50110 "Subscription"
 
             trigger OnValidate()
             begin
-                // Calculate LCY amount when amount changes
                 CalculateAmountLCY();
             end;
         }
@@ -72,6 +71,11 @@ table 50110 "Subscription"
         {
             Caption = 'Billing Cycle';
             DataClassification = CustomerContent;
+
+            trigger OnValidate()
+            begin
+                CalculateEndDate();
+            end;
         }
 
         field(14; "Currency Code"; Code[10])
@@ -82,7 +86,6 @@ table 50110 "Subscription"
 
             trigger OnValidate()
             begin
-                // Calculate LCY amount when currency changes
                 CalculateAmountLCY();
             end;
         }
@@ -94,19 +97,16 @@ table 50110 "Subscription"
 
             trigger OnValidate()
             begin
-                if "Start Date" <> 0D then begin
-                    CalculateNextRenewal();
-                    ValidateDates();
-                end;
+                if "Start Date" <> 0D then
+                    CalculateEndDate();
+                ValidateDates();
             end;
         }
-
         field(17; "Status"; Enum "Subscription Status")
         {
             Caption = 'Status';
             DataClassification = CustomerContent;
         }
-
         field(18; "Reminder Days"; Integer)
         {
             Caption = 'Reminder Days';
@@ -119,13 +119,11 @@ table 50110 "Subscription"
             Caption = 'Reminder Policy';
             DataClassification = CustomerContent;
         }
-
         field(20; "Note"; Text[250])
         {
             Caption = 'Note';
             DataClassification = CustomerContent;
         }
-
         field(24; "Category Description"; Text[100])
         {
             Caption = 'Category Description';
@@ -137,6 +135,7 @@ table 50110 "Subscription"
         {
             Caption = 'End Date';
             DataClassification = CustomerContent;
+            Editable = false;
 
             trigger OnValidate()
             begin
@@ -177,7 +176,7 @@ table 50110 "Subscription"
             Caption = 'Amount in LCY';
             Editable = false;
             DataClassification = CustomerContent;
-            AutoFormatType = 1; // Amount format
+            AutoFormatType = 1;
             DecimalPlaces = 2 : 2;
         }
 
@@ -209,7 +208,7 @@ table 50110 "Subscription"
         field(55; "End-user"; Code[50])
         {
             Caption = 'End-user';
-            TableRelation = Employee."No.";
+            TableRelation = "Employee Ext";
             DataClassification = CustomerContent;
         }
 
@@ -223,8 +222,23 @@ table 50110 "Subscription"
         field(57; "Payment Method"; Code[20])
         {
             Caption = 'Payment Method';
-             TableRelation = "ST Payment Method"."Entry No.";
+            TableRelation = "Custom Payment Method".Code;
             DataClassification = CustomerContent;
+        }
+
+        field(58; Departments; Text[250])
+        {
+            Caption = 'Departments';
+            DataClassification = CustomerContent;
+            ToolTip = 'Displays the list of departments assigned to this subscription';
+            Editable = false;
+        }
+        field(59; "Invoice Number"; Text[20])
+        {
+            Caption = 'Invoice Number';
+            DataClassification = CustomerContent;
+            ToolTip = 'Displays the Invoice Number assigned to this subscription';
+            Editable = true;
         }
 
         field(50004; "Category Code"; Code[20])
@@ -248,6 +262,21 @@ table 50110 "Subscription"
                 end;
             end;
         }
+
+        // NEW FIELD: Billing Cycle Count
+        field(50005; "Billing Cycle Count"; Integer)
+        {
+            Caption = 'Billing Cycle Count';
+            DataClassification = CustomerContent;
+            ToolTip = 'Specifies how many times the selected billing cycle should occur before renewal.';
+            MinValue = 1;
+            InitValue = 1;
+
+            trigger OnValidate()
+            begin
+                CalculateEndDate();
+            end;
+        }
     }
 
     keys
@@ -256,45 +285,34 @@ table 50110 "Subscription"
         {
             Clustered = true;
         }
-        key(SubscriptionID; "Subscription ID")
-        {
-        }
-        
-        key(NextRenewalDate; "End Date")
-        {
-        }
-        key(Status; Status)
-        {
-        }
-        key(ServiceName; "Service Name")
-        {
-        }
-        key(Category; "Category Code")
-        {
-        }
-        key(Currency; "Currency Code")
-        {
-        }
-        key(AmountLCY; "Amount in LCY")
-        {
-        }
-        key(CreatedDate; "Created Date")
-{
-    // No special properties needed; exists to support ORDER(Descending) efficiently
-}
+        key(SubscriptionID; "Subscription ID") { }
+        key(NextRenewalDate; "End Date") { }
+        key(Status; Status) { }
+        key(ServiceName; "Service Name") { }
+        key(Category; "Category Code") { }
+        key(Currency; "Currency Code") { }
+        key(AmountLCY; "Amount in LCY") { }
+    }
 
+    // ✅ ADD THIS FIELDGROUPS SECTION FOR MULTI-COLUMN DROPDOWNS
+    fieldgroups
+    {
+        fieldgroup(DropDown; "No.", "Service Name", "Category Code", Status)
+        {
+            // This defines what columns show in dropdown lists when this table is used in TableRelation
+        }
     }
 
     var
         SubscriptionSetup: Record "Subscription Setup";
         NoSeries: Codeunit "No. Series";
 
-   trigger OnInsert()
-var
+    trigger OnInsert()
+    var
     InitialSetup: Record "Initial Setup";
     NoSeriesMgt: Codeunit "No. Series";
-begin
-    if "No." = '' then begin
+    begin
+         if "No." = '' then begin
         InitialSetup.Get();
         InitialSetup.TestField("Subscription Nos.");
 
@@ -307,22 +325,21 @@ begin
         // Link the record to that series
         "No. Series" := InitialSetup."Subscription Nos.";
     end;
+        "Created Date" := CurrentDateTime;
+        "Created By" := UserId;
+        "Last Modified Date" := CurrentDateTime;
+        "Last Modified By" := UserId;
 
-    "Created Date" := CurrentDateTime;
-    "Created By" := UserId;
-    "Last Modified Date" := CurrentDateTime;
-    "Last Modified By" := UserId;
+        if Status = Status::" " then
+            Status := Status::Active;
 
-    if Status = Status::" " then
-        Status := Status::Active;
+        // Ensure Billing Cycle Count has a default value
+        if "Billing Cycle Count" = 0 then
+            "Billing Cycle Count" := 1;
 
-    // Calculate LCY amount on insert
-    CalculateAmountLCY();
-
-    CreateLedgerEntry("Subscription Change Type"::Creation, 0D, 0D);
-end;
-
-
+        CalculateAmountLCY();
+        CreateLedgerEntry("Subscription Change Type"::Creation, 0D, 0D);
+    end;
 
     trigger OnModify()
     begin
@@ -353,20 +370,45 @@ end;
         end;
     end;
 
-    procedure CalculateNextRenewal()
+    procedure CalculateEndDate()
+    var
+        CycleCount: Integer;
+        DateFormulaText: Text;
+        EndDateFormula: DateFormula;
     begin
-        if "Start Date" = 0D then
+        // Exit if Start Date is not set
+        if "Start Date" = 0D then begin
+            "End Date" := 0D;
             exit;
+        end;
 
+        // Ensure Billing Cycle Count is at least 1
+        CycleCount := "Billing Cycle Count";
+        if CycleCount < 1 then begin
+            CycleCount := 1;
+            "Billing Cycle Count" := 1;
+        end;
+
+        // Build the DateFormula string based on Billing Cycle and Count
         case "Billing Cycle" of
             "Billing Cycle"::Weekly:
-                "End Date" := CalcDate('<+1W-1D>', "Start Date");
+                DateFormulaText := StrSubstNo('<%1W-1D>', CycleCount);
             "Billing Cycle"::Monthly:
-                "End Date" := CalcDate('<+1M-1D>', "Start Date");
+                DateFormulaText := StrSubstNo('<%1M-1D>', CycleCount);
             "Billing Cycle"::Quarterly:
-                "End Date" := CalcDate('<+3M-1D>', "Start Date");
+                DateFormulaText := StrSubstNo('<%1M-1D>', CycleCount * 3);
             "Billing Cycle"::Yearly:
-                "End Date" := CalcDate('<+1Y-1D>', "Start Date");
+                DateFormulaText := StrSubstNo('<%1Y-1D>', CycleCount);
+            else
+                DateFormulaText := '<1M-1D>'; // Default fallback
+        end;
+
+        // Convert text to DateFormula and calculate End Date
+        if Evaluate(EndDateFormula, DateFormulaText) then begin
+            "End Date" := CalcDate(EndDateFormula, "Start Date");
+        end else begin
+            // Fallback if DateFormula evaluation fails
+            "End Date" := CalcDate('<1M-1D>', "Start Date");
         end;
     end;
 
@@ -375,30 +417,24 @@ end;
         ExchangeRate: Decimal;
         GLSetup: Record "General Ledger Setup";
     begin
-        // Clear LCY amount first
         "Amount in LCY" := 0;
 
-        // If no amount, exit
         if Amount = 0 then
             exit;
 
-        // If no currency code, assume local currency
         if "Currency Code" = '' then begin
             if GLSetup.Get() then
                 "Amount in LCY" := Amount
             else
-                "Amount in LCY" := Amount; // Fallback if GL Setup not found
+                "Amount in LCY" := Amount;
             exit;
         end;
 
-        // Get the current exchange rate for the currency
         ExchangeRate := GetCurrentExchangeRate("Currency Code");
 
         if ExchangeRate <> 0 then begin
-            // Calculate LCY amount using Microsoft's standard formula
             "Amount in LCY" := Amount * ExchangeRate;
         end else begin
-            // If no exchange rate found, set to 0
             "Amount in LCY" := 0;
         end;
     end;
@@ -409,29 +445,25 @@ end;
         ExchangeRateAmount: Decimal;
         RelationalExchRateAmount: Decimal;
     begin
-        // Find the most recent exchange rate for the currency
         CurrencyExchangeRate.SetRange("Currency Code", CurrencyCode);
         CurrencyExchangeRate.SetFilter("Starting Date", '<=%1', Today);
         CurrencyExchangeRate.SetCurrentKey("Currency Code", "Starting Date");
-        CurrencyExchangeRate.Ascending(false); // Get the most recent rate
+        CurrencyExchangeRate.Ascending(false);
 
         if CurrencyExchangeRate.FindFirst() then begin
             ExchangeRateAmount := CurrencyExchangeRate."Exchange Rate Amount";
             RelationalExchRateAmount := CurrencyExchangeRate."Relational Exch. Rate Amount";
 
-            // Handle default values as per Microsoft documentation
             if ExchangeRateAmount = 0 then
                 ExchangeRateAmount := 1;
             if RelationalExchRateAmount = 0 then
                 RelationalExchRateAmount := 1;
 
-            // Calculate the rate: Relational Rate / Exchange Rate
             if ExchangeRateAmount <> 0 then
                 exit(RelationalExchRateAmount / ExchangeRateAmount)
             else
                 exit(0);
         end else begin
-            // No exchange rate found
             exit(0);
         end;
     end;
@@ -440,25 +472,36 @@ end;
     var
         OldStartDate: Date;
         OldEndDate: Date;
+        CycleCount: Integer;
+        DateFormulaText: Text;
+        RenewalFormula: DateFormula;
     begin
         OldStartDate := "Start Date";
         OldEndDate := "End Date";
 
-        if "End Date" = 0D then begin
-            CalculateNextRenewal();
-        end else begin
-            case "Billing Cycle" of
-                "Billing Cycle"::Weekly:
-                    "End Date" := CalcDate('<+1W>', "End Date");
-                "Billing Cycle"::Monthly:
-                    "End Date" := CalcDate('<+1M>', "End Date");
-                "Billing Cycle"::Quarterly:
-                    "End Date" := CalcDate('<+3M>', "End Date");
-                "Billing Cycle"::Yearly:
-                    "End Date" := CalcDate('<+1Y>', "End Date");
-            end;
+        // Ensure Billing Cycle Count is at least 1
+        CycleCount := "Billing Cycle Count";
+        if CycleCount < 1 then
+            CycleCount := 1;
 
-            "Start Date" := CalcDate('<+1D>', OldEndDate);
+        // Build renewal DateFormula
+        case "Billing Cycle" of
+            "Billing Cycle"::Weekly:
+                DateFormulaText := StrSubstNo('<%1W>', CycleCount);
+            "Billing Cycle"::Monthly:
+                DateFormulaText := StrSubstNo('<%1M>', CycleCount);
+            "Billing Cycle"::Quarterly:
+                DateFormulaText := StrSubstNo('<%1M>', CycleCount * 3);
+            "Billing Cycle"::Yearly:
+                DateFormulaText := StrSubstNo('<%1Y>', CycleCount);
+            else
+                DateFormulaText := '<1M>';
+        end;
+
+        // Calculate new dates based on current End Date
+        if Evaluate(RenewalFormula, DateFormulaText) then begin
+            "Start Date" := "End Date" + 1;
+            "End Date" := CalcDate(RenewalFormula, "Start Date") - 1;
         end;
 
         if Status in [Status::Expired, Status::Inactive, Status::Cancelled] then
@@ -702,7 +745,6 @@ end;
             exit(Format("Amount in LCY", 0, '<Precision,2:2><Standard Format,0>'));
     end;
 
-    // NEW: Get exchange rate information for display
     procedure GetExchangeRateInfo(): Text
     var
         ExchangeRate: Decimal;
@@ -717,14 +759,13 @@ end;
             exit('No Exchange Rate Found');
     end;
 
-    // NEW: Validate currency and exchange rate
     procedure ValidateCurrency(): Boolean
     var
         Currency: Record Currency;
         ExchangeRate: Decimal;
     begin
         if "Currency Code" = '' then
-            exit(true); // No currency code is valid (assumes LCY)
+            exit(true);
 
         if not Currency.Get("Currency Code") then begin
             Error('Currency Code %1 does not exist in the Currency table.', "Currency Code");

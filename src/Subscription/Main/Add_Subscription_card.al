@@ -1,3 +1,4 @@
+
 page 50110 "Add Subscription"
 {
     PageType = Card;
@@ -39,6 +40,7 @@ page 50110 "Add Subscription"
                         {
                             ApplicationArea = All;
                             ToolTip = 'Specify the name of the subscription service.';
+                            ShowMandatory = true;
 
                             trigger OnValidate()
                             begin
@@ -56,6 +58,18 @@ page 50110 "Add Subscription"
                                 AutoSaveRecord();
                             end;
                         }
+
+                        field("Invoice Number"; Rec."Invoice Number")
+                        {
+                            ApplicationArea = All;
+                            Caption = 'Invoice Number';
+                            ToolTip = 'Enter the invoice number for this subscription.';
+
+                            trigger OnValidate()
+                            begin
+                                AutoSaveRecord();
+                            end;
+                        }
                     }
 
                     group(Column2)
@@ -66,6 +80,7 @@ page 50110 "Add Subscription"
                         {
                             ApplicationArea = All;
                             ToolTip = 'Select the category for this subscription.';
+                            ShowMandatory = true;
 
                             trigger OnValidate()
                             var
@@ -83,8 +98,13 @@ page 50110 "Add Subscription"
                             ApplicationArea = All;
                             Caption = 'Departments';
                             ToolTip = 'Select multiple departments for this subscription. Click to open department selection.';
-                            Editable = false;
+                            Editable = true;
                             ShowMandatory = true;
+
+                            trigger OnValidate()
+                            begin
+                                ValidateAutoCalculatedField('Departments', 'Use the lookup button (F4) to select departments. Direct entry is not allowed.');
+                            end;
 
                             trigger OnAssistEdit()
                             begin
@@ -99,13 +119,33 @@ page 50110 "Add Subscription"
                             end;
                         }
 
-                        field("Primary Employee"; PrimaryEmployeeNo)
+                        field("Primary Employee"; PrimaryEmployeeDisplay)
                         {
                             ApplicationArea = All;
                             Caption = 'Primary Employee';
-                            ToolTip = 'Shows the primary employee assigned to this subscription. Click to manage all end users.';
-                            TableRelation = "Employee Ext"."No." where(Status = const(Active), Blocked = const(false));
-                            Editable = false;
+                            ToolTip = 'Shows the primary employee assigned to this subscription. Select from list of active, unblocked employees.';
+                            Editable = true;
+
+                            trigger OnValidate()
+                            var
+                                EmployeeExt: Record "Employee Ext";
+                            begin
+                                if PrimaryEmployeeDisplay <> '' then begin
+                                    EmployeeExt.SetRange(Status, EmployeeExt.Status::Active);
+                                    EmployeeExt.SetRange(Blocked, false);
+                                    EmployeeExt.SetRange("Full Name", PrimaryEmployeeDisplay);
+
+                                    if EmployeeExt.FindFirst() then begin
+                                        PrimaryEmployeeNo := EmployeeExt."No.";
+                                        PrimaryEmployeeDisplay := EmployeeExt."Full Name";
+                                    end else begin
+                                        Clear(PrimaryEmployeeNo);
+                                        Message('Employee with name "%1" not found or is not active. Please select from the dropdown list.', PrimaryEmployeeDisplay);
+                                        PrimaryEmployeeDisplay := '';
+                                    end;
+                                end else
+                                    Clear(PrimaryEmployeeNo);
+                            end;
 
                             trigger OnAssistEdit()
                             begin
@@ -115,6 +155,11 @@ page 50110 "Add Subscription"
                             trigger OnDrillDown()
                             begin
                                 OpenSubscriptionEmployees();
+                            end;
+
+                            trigger OnLookup(var Text: Text): Boolean
+                            begin
+                                exit(LookupEmployee(PrimaryEmployeeNo, PrimaryEmployeeDisplay, 'Primary Employee'));
                             end;
                         }
                     }
@@ -127,27 +172,96 @@ page 50110 "Add Subscription"
                         {
                             ApplicationArea = All;
                             Caption = 'End Users Count';
-                            ToolTip = 'Shows the total number of end users assigned to this subscription.';
+                            ToolTip = 'Shows the total number of end users assigned to this subscription. Click to view/manage end users.';
                             Editable = false;
                             BlankZero = true;
-
-                            trigger OnDrillDown()
-                            begin
-                                OpenSubscriptionEmployees();
-                            end;
-                        }
-
-                        field("End-user"; Rec."End-user")
-                        {
-                            ApplicationArea = All;
-                            ToolTip = 'Select the end user for this subscription.';
-                            Caption = 'Owner (Legacy)';
-                            Importance = Additional;
-                            TableRelation = "Employee Ext"."No." where(Status = const(Active), Blocked = const(false));
+                            DrillDown = true;
+                            DrillDownPageId = "End User List";
 
                             trigger OnValidate()
                             begin
-                                AutoSaveRecord();
+                                ValidateAutoCalculatedField('End User Count', 'This field is automatically calculated. Use the End Users section below or click the lookup button to manage users.');
+                            end;
+
+                            // Pass both Subscription No. and Department filter
+                            trigger OnDrillDown()
+                            var
+                                EndUserRec: Record "End User";
+                                EndUserListPage: Page "End User List";
+                                DeptFilter: Text;
+                            begin
+                                if Rec."No." = '' then begin
+                                    Message('Please save the subscription before viewing end users.');
+                                    exit;
+                                end;
+
+                                EndUserRec.SetRange("Subscription No.", Rec."No.");
+                                DeptFilter := BuildDepartmentCodeFilter(Rec."No.");
+                                if DeptFilter <> '' then
+                                    EndUserRec.SetFilter("Department Code", DeptFilter);
+
+                                EndUserListPage.SetTableView(EndUserRec);
+                                EndUserListPage.Run();
+
+                                UpdateEndUserInfo();
+                                SafeRefreshPage();
+                            end;
+                        }
+
+                        field("End-user"; OwnerDisplay)
+                        {
+                            ApplicationArea = All;
+                            ToolTip = 'Select the owner/end user for this subscription. Select from dropdown showing employee full names.';
+                            Caption = 'Owner';
+                            Importance = Additional;
+
+                            trigger OnValidate()
+                            var
+                                EmployeeExt: Record "Employee Ext";
+                            begin
+                                if OwnerDisplay <> '' then begin
+                                    EmployeeExt.SetRange(Status, EmployeeExt.Status::Active);
+                                    EmployeeExt.SetRange(Blocked, false);
+                                    EmployeeExt.SetRange("Full Name", OwnerDisplay);
+
+                                    if EmployeeExt.FindFirst() then begin
+                                        if EmployeeExt.Blocked then
+                                            Error('Cannot assign blocked employee %1 (%2) as owner.', EmployeeExt."No.", EmployeeExt."Full Name");
+                                        if EmployeeExt.Status <> EmployeeExt.Status::Active then
+                                            Error('Cannot assign inactive employee %1 (%2) as owner. Current status: %3',
+                                                EmployeeExt."No.", EmployeeExt."Full Name", EmployeeExt.Status);
+
+                                        Rec."End-user" := EmployeeExt."No.";
+                                        OwnerDisplay := EmployeeExt."Full Name";
+                                        AutoSaveRecord();
+                                    end else begin
+                                        Clear(Rec."End-user");
+                                        Message('Employee with name "%1" not found or is not active. Please select from the dropdown list.', OwnerDisplay);
+                                        OwnerDisplay := '';
+                                        AutoSaveRecord();
+                                    end;
+                                end else begin
+                                    Clear(Rec."End-user");
+                                    AutoSaveRecord();
+                                end;
+                            end;
+
+                            trigger OnLookup(var Text: Text): Boolean
+                            var
+                                TempEmployeeNo: Code[20];
+                                TempOwnerDisplay: Text[100];
+                            begin
+                                TempEmployeeNo := Rec."End-user";
+                                TempOwnerDisplay := OwnerDisplay;
+
+                                if LookupEmployee(TempEmployeeNo, TempOwnerDisplay, 'Owner') then begin
+                                    Rec."End-user" := TempEmployeeNo;
+                                    OwnerDisplay := TempOwnerDisplay;
+                                    AutoSaveRecord();
+                                    exit(true);
+                                end;
+
+                                exit(false);
                             end;
                         }
 
@@ -179,52 +293,33 @@ page 50110 "Add Subscription"
                         ShowCaption = false;
 
                         field("Payment Method"; Rec."Payment Method")
-{
-    ApplicationArea = All;
-    ToolTip = 'Select the payment method for this subscription.';
-    TableRelation = "ST Payment Method"."Entry No.";
+                        {
+                            ApplicationArea = All;
+                            ToolTip = 'Select the payment method for this subscription.';
+                            TableRelation = "Custom Payment Method".Code;
 
-    trigger OnLookup(var Text: Text): Boolean
-    var
-        STPaymentMethod: Record "ST Payment Method";
-        STPaymentMethodsPage: Page "ST Payment Methods"; // Assuming you have a list page for "ST Payment Method" table
-    begin
-        STPaymentMethod.Reset(); // Optional: Add filters if needed
-        STPaymentMethodsPage.SetTableView(STPaymentMethod);
-        STPaymentMethodsPage.LookupMode(true);
-        if STPaymentMethodsPage.RunModal() = ACTION::LookupOK then begin
-            STPaymentMethodsPage.GetRecord(STPaymentMethod);
-            Rec."Payment Method" := STPaymentMethod.Description;
-            PaymentMethodDescription := STPaymentMethod.Title; // Set the page variable to the Title field
-            exit(true);
-        end;
-        exit(false);
-    end;
-}
-
-field("Payment Method Description"; PaymentMethodDescription)
-{
-    ApplicationArea = All;
-    Caption = 'Payment Method Name';
-    Editable = false;
-    Style = StandardAccent;
-}
+                            trigger OnValidate()
+                            var
+                                CustomPaymentMethod: Record "Custom Payment Method";
+                            begin
+                                if Rec."Payment Method" <> '' then
+                                    if not CustomPaymentMethod.Get(Rec."Payment Method") then
+                                        Error('Payment Method %1 does not exist.', Rec."Payment Method");
+                                AutoSaveRecord();
+                            end;
+                        }
 
                         field("Currency Code"; Rec."Currency Code")
                         {
                             ApplicationArea = All;
                             TableRelation = Currency.Code;
+
                             trigger OnValidate()
                             begin
                                 CalculateAmountLCY();
                                 AutoSaveRecord();
                             end;
                         }
-                    }
-
-                    group(Column2_Details)
-                    {
-                        ShowCaption = false;
 
                         field("Amount"; Rec.Amount)
                         {
@@ -241,11 +336,17 @@ field("Payment Method Description"; PaymentMethodDescription)
                         field("Amount in LCY"; Rec."Amount in LCY")
                         {
                             ApplicationArea = All;
+                            Caption = 'Amount (LCY)';
                             ToolTip = 'Shows the subscription amount converted to local currency using current exchange rate.';
                             Editable = false;
                             BlankZero = true;
                             Style = StandardAccent;
                         }
+                    }
+
+                    group(Column2_Details)
+                    {
+                        ShowCaption = false;
 
                         field("Billing Cycle"; Rec."Billing Cycle")
                         {
@@ -254,6 +355,20 @@ field("Payment Method Description"; PaymentMethodDescription)
 
                             trigger OnValidate()
                             begin
+                                SafeCalculateEndDate();
+                                AutoSaveRecord();
+                            end;
+                        }
+
+                        field("Billing Cycle Count"; Rec."Billing Cycle Count")
+                        {
+                            ApplicationArea = All;
+                            Caption = 'Billing Cycle Count';
+                            ToolTip = 'Enter how many times the selected billing cycle should occur before renewal.';
+
+                            trigger OnValidate()
+                            begin
+                                SafeCalculateEndDate();
                                 AutoSaveRecord();
                             end;
                         }
@@ -279,20 +394,28 @@ field("Payment Method Description"; PaymentMethodDescription)
                         field("End Date"; Rec."End Date")
                         {
                             ApplicationArea = All;
-                            Caption='Next renewal Date';
-                            ToolTip = 'End Date is automatically calculated based on Start Date and Billing Cycle.';
+                            Caption = 'End Date';
+                            ToolTip = 'Enter the end date for this subscription or let it be calculated automatically.';
                             Editable = true;
                             StyleExpr = EndDateStyleExpr;
                             ShowMandatory = false;
-                            Style = StandardAccent;
 
                             trigger OnValidate()
                             begin
-                                if Rec."Start Date" <> 0D then begin
-                                    SafeCalculateEndDate();
-                                    Message('End Date has been automatically recalculated based on Start Date (%1) and Billing Cycle (%2).', Rec."Start Date", Rec."Billing Cycle");
+                                if Rec."Start Date" = 0D then
+                                    Error('Please enter a Start Date first. The End Date will be calculated automatically based on the Start Date and Billing Cycle.');
+
+                                if Rec."End Date" < Rec."Start Date" then
+                                    Error('End Date (%1) cannot be earlier than Start Date (%2).', Rec."End Date", Rec."Start Date");
+
+                                if Rec."Billing Cycle" = Rec."Billing Cycle"::" " then
+                                    Error('Please select a Billing Cycle first. The End Date will be calculated automatically.');
+
+                                if Confirm('Do you want to keep this manual End Date, or recalculate based on Start Date and Billing Cycle?', false) then begin
+                                    // Keep manual entry
                                 end else begin
-                                    Error('Please enter a Start Date first. The End Date will be calculated automatically.');
+                                    SafeCalculateEndDate();
+                                    Message('End Date has been recalculated to %1 based on your Start Date and Billing Cycle.', Rec."End Date");
                                 end;
 
                                 AutoSaveRecord();
@@ -309,6 +432,7 @@ field("Payment Method Description"; PaymentMethodDescription)
                                 AutoSaveRecord();
                             end;
                         }
+
                         field("Reminder Policy"; Rec."Reminder Policy")
                         {
                             ApplicationArea = All;
@@ -321,22 +445,6 @@ field("Payment Method Description"; PaymentMethodDescription)
                         }
                     }
                 }
-
-                //     group(ReminderGroup)
-                //     {
-                //         Caption = 'Reminder Settings';
-
-                //         field("Reminder Policy"; Rec."Reminder Policy")
-                //         {
-                //             ApplicationArea = All;
-                //             ToolTip = 'Select the reminder policy for this subscription.';
-
-                //             trigger OnValidate()
-                //             begin
-                //                 AutoSaveRecord();
-                //             end;
-                //         }
-                //     }
             }
 
             group(Additional)
@@ -355,27 +463,6 @@ field("Payment Method Description"; PaymentMethodDescription)
                     end;
                 }
             }
-
-            group(DepartmentDetails)
-            {
-                Caption = 'Department Details';
-                part(DepartmentSelection; "Department Selection")
-                {
-                    ApplicationArea = All;
-                    SubPageLink = "Subscription No." = field("No.");
-                }
-            }
-
-            group(EndUsersDetails)
-            {
-                Caption = 'End Users';
-                part(EndUsersSubpage; "End User Subpage")
-                {
-                    ApplicationArea = All;
-                    SubPageLink = "Subscription No." = field("No.");
-                    UpdatePropagation = Both;
-                }
-            }
         }
 
         area(FactBoxes)
@@ -392,46 +479,6 @@ field("Payment Method Description"; PaymentMethodDescription)
     {
         area(processing)
         {
-
-            
-            action(SelectDepartmentsAction)
-            {
-                ApplicationArea = All;
-                Caption = 'Select Departments';
-                ToolTip = 'Select multiple departments for this subscription.';
-                Image = SelectEntries;
-
-                trigger OnAction()
-                begin
-                    SelectMultipleDepartments();
-                    SafeRefreshPage();
-                end;
-            }
-
-            action(ManageSubscriptionEmployees)
-            {
-                ApplicationArea = All;
-                Caption = 'Manage End Users';
-                ToolTip = 'Manage employees assigned as end users to this subscription.';
-                Image = Users;
-                Enabled = EndUsersEnabled;
-
-                trigger OnAction()
-                begin
-                    OpenSubscriptionEmployees();
-                end;
-            }
-
-            action(ManageUsers)
-            {
-                ApplicationArea = All;
-                Caption = 'Legacy Users';
-                ToolTip = 'Manage legacy users assigned to this subscription.';
-                Image = UserSetup;
-                Enabled = UsersEnabled;
-                Visible = false;
-            }
-
             action(RenewSubscriptionAction)
             {
                 ApplicationArea = All;
@@ -460,32 +507,6 @@ field("Payment Method Description"; PaymentMethodDescription)
                 end;
             }
 
-            action(UpdateEndDateAction)
-            {
-                ApplicationArea = All;
-                Caption = 'Update End Date';
-                ToolTip = 'Update the end date based on billing cycle.';
-                Image = Calculate;
-
-                trigger OnAction()
-                begin
-                    SafeUpdateEndDate();
-                end;
-            }
-
-            action(SaveAndGoToListAction)
-            {
-                ApplicationArea = All;
-                Caption = 'Save & Go to List';
-                ToolTip = 'Save this subscription and navigate to the subscription list.';
-                Image = PostedOrder;
-
-                trigger OnAction()
-                begin
-                    SaveAndGoToList();
-                end;
-            }
-
             action(ViewHistory)
             {
                 ApplicationArea = All;
@@ -509,63 +530,23 @@ field("Payment Method Description"; PaymentMethodDescription)
                     SubscriptionLedgerPage.Run();
                 end;
             }
-
-            action(RecalculateLCYAmount)
-            {
-                ApplicationArea = All;
-                Caption = 'Recalculate LCY Amount';
-                ToolTip = 'Recalculate the local currency amount using current exchange rates.';
-                Image = Calculate;
-
-                trigger OnAction()
-                begin
-                    CalculateAmountLCY();
-                    CurrPage.Update(false);
-                    Message('Amount in LCY has been recalculated based on current exchange rates.');
-                end;
-            }
         }
 
         area(navigation)
         {
-            action(SubscriptionSetup)
-            {
-                ApplicationArea = All;
-                Caption = 'Subscription Setup';
-                ToolTip = 'Open subscription setup to configure number series.';
-                Image = Setup;
-                RunObject = Page "Subscription Setup";
-            }
-
-            action(ManageCategories)
-            {
-                ApplicationArea = All;
-                Caption = 'Manage Categories';
-                ToolTip = 'Create and manage subscription categories.';
-                Image = Category;
-                RunObject = Page "Subscription Categories";
-            }
-
-            action(ManageDepartments)
-            {
-                ApplicationArea = All;
-                Caption = 'Manage Departments';
-                ToolTip = 'Create and manage departments.';
-                Image = Departments;
-                RunObject = Page Departments;
-            }
-
             action(ViewAllEndUsers)
             {
                 ApplicationArea = All;
                 Caption = 'End Users for this Subscription';
-                ToolTip = 'View end users assigned to this subscription.';
+                ToolTip = 'View and manage end users assigned to this subscription.';
                 Image = Users;
 
+                // Pass both Subscription No. and Department filter
                 trigger OnAction()
                 var
                     EndUserRec: Record "End User";
                     EndUserListPage: Page "End User List";
+                    DeptFilter: Text;
                 begin
                     if Rec."No." = '' then begin
                         Message('Please save the subscription before viewing end users.');
@@ -573,38 +554,16 @@ field("Payment Method Description"; PaymentMethodDescription)
                     end;
 
                     EndUserRec.SetRange("Subscription No.", Rec."No.");
+                    DeptFilter := BuildDepartmentCodeFilter(Rec."No.");
+                    if DeptFilter <> '' then
+                        EndUserRec.SetFilter("Department Code", DeptFilter);
+
                     EndUserListPage.SetTableView(EndUserRec);
                     EndUserListPage.Run();
 
-                    SafeRefreshDisplayInfo();
+                    UpdateEndUserInfo();
+                    SafeRefreshPage();
                 end;
-            }
-
-            action(ManageCurrencies)
-            {
-                ApplicationArea = All;
-                Caption = 'Manage Currencies';
-                ToolTip = 'Manage currencies and exchange rates.';
-                Image = Currency;
-                RunObject = Page Currencies;
-            }
-
-            action(ManageEmployeeExt)
-            {
-                ApplicationArea = All;
-                Caption = 'Manage Employee Extensions';
-                ToolTip = 'Manage employee extension records.';
-                Image = Employee;
-                RunObject = Page "Employee Ext List";
-            }
-
-            action(ManagePaymentMethods)
-            {
-                ApplicationArea = All;
-                Caption = 'Manage Payment Methods';
-                ToolTip = 'Manage custom payment methods.';
-                Image = Payment;
-                RunObject = Page "Custom Payment Method List";
             }
         }
 
@@ -613,13 +572,8 @@ field("Payment Method Description"; PaymentMethodDescription)
             group(Process)
             {
                 Caption = 'Process';
-                actionref(SelectDepartments_Promoted; SelectDepartmentsAction) { }
-                actionref(ManageSubscriptionEmployees_Promoted; ManageSubscriptionEmployees) { }
                 actionref(RenewSubscription_Promoted; RenewSubscriptionAction) { }
                 actionref(CancelSubscription_Promoted; CancelSubscriptionAction) { }
-                actionref(UpdateEndDate_Promoted; UpdateEndDateAction) { }
-                actionref(SaveAndGoToList_Promoted; SaveAndGoToListAction) { }
-                actionref(RecalculateLCY_Promoted; RecalculateLCYAmount) { }
             }
             group(History)
             {
@@ -629,12 +583,6 @@ field("Payment Method Description"; PaymentMethodDescription)
             group(Setup)
             {
                 Caption = 'Setup';
-                actionref(ManageCategories_Promoted; ManageCategories) { }
-                actionref(ManageDepartments_Promoted; ManageDepartments) { }
-                actionref(ViewAllEndUsers_Promoted; ViewAllEndUsers) { }
-                actionref(ManageCurrencies_Promoted; ManageCurrencies) { }
-                actionref(ManageEmployeeExt_Promoted; ManageEmployeeExt) { }
-                actionref(ManagePaymentMethods_Promoted; ManagePaymentMethods) { }
             }
         }
     }
@@ -651,45 +599,95 @@ field("Payment Method Description"; PaymentMethodDescription)
         UsersEnabled: Boolean;
         EndUsersEnabled: Boolean;
         PrimaryEmployeeNo: Code[20];
+        PrimaryEmployeeDisplay: Text[100];
+        OwnerDisplay: Text[100];
         EndUserCount: Integer;
         LastRefreshTime: Time;
         CacheValidSeconds: Integer;
-        PaymentMethodDescription: Text[100];
 
     trigger OnAfterGetRecord()
     begin
         InitializeVariables();
-        //SafeUpdateStatusAndRefresh();
+        SafeUpdateStatusAndRefresh();
         SafeUpdateDisplayInfoWithCache();
-        UpdatePaymentMethodDescription();
         SetConditionalFormatting();
         SetActionStates();
+        LoadDepartmentDisplayTextFromDatabase();
+        UpdatePrimaryEmployeeDisplay();
+        UpdateOwnerDisplay();
     end;
 
     trigger OnAfterGetCurrRecord()
     begin
-        //SafeUpdateStatusAndRefresh();
+        SafeUpdateStatusAndRefresh();
         SafeUpdateDisplayInfoWithCache();
-        UpdatePaymentMethodDescription();
         SetConditionalFormatting();
         SetActionStates();
+        LoadDepartmentDisplayTextFromDatabase();
+        UpdatePrimaryEmployeeDisplay();
+        UpdateOwnerDisplay();
     end;
 
-    local procedure UpdatePaymentMethodDescription()
+    // ----------------------
+    // Local procedures
+    // ----------------------
+
+    local procedure LookupEmployee(var EmployeeNo: Code[20]; var DisplayText: Text[100]; FieldType: Text): Boolean
     var
-        CustomPaymentMethod: Record "Custom Payment Method";
+        EmployeeExt: Record "Employee Ext";
+        EmployeeList: Page "Employee Ext List";
     begin
-        Clear(PaymentMethodDescription);
+        EmployeeExt.SetRange(Status, EmployeeExt.Status::Active);
+        EmployeeExt.SetRange(Blocked, false);
 
-        if Rec."Payment Method" <> '' then begin
-            if CustomPaymentMethod.Get(Rec."Payment Method") then
-                PaymentMethodDescription := CustomPaymentMethod.Name
-            else
-                PaymentMethodDescription := '<Payment Method not found>';
+        if EmployeeNo <> '' then
+            if EmployeeExt.Get(EmployeeNo) then;
+
+        EmployeeList.SetTableView(EmployeeExt);
+        EmployeeList.SetRecord(EmployeeExt);
+        EmployeeList.LookupMode(true);
+
+        if EmployeeList.RunModal() = Action::LookupOK then begin
+            EmployeeList.GetRecord(EmployeeExt);
+
+            if EmployeeExt.Blocked then begin
+                Error('Cannot assign blocked employee %1 (%2) as %3.', EmployeeExt."No.", EmployeeExt."Full Name", FieldType);
+                exit(false);
+            end;
+
+            if EmployeeExt.Status <> EmployeeExt.Status::Active then begin
+                Error('Cannot assign inactive employee %1 (%2) as %3. Current status: %4',
+                      EmployeeExt."No.", EmployeeExt."Full Name", FieldType, EmployeeExt.Status);
+                exit(false);
+            end;
+
+            EmployeeNo := EmployeeExt."No.";
+            DisplayText := EmployeeExt."Full Name";
+
+            if FieldType = 'Primary Employee' then
+                UpdatePrimaryEmployeeDisplay()
+            else if FieldType = 'Owner' then
+                UpdateOwnerDisplay();
+
+            exit(true);
         end;
+
+        exit(false);
     end;
 
-    // [All other procedures remain the same as in your original code]
+    local procedure LoadDepartmentDisplayTextFromDatabase()
+    begin
+        if Rec.Departments <> '' then
+            DepartmentDisplayText := Rec.Departments
+        else
+            UpdateDepartmentDisplayText();
+    end;
+
+    local procedure ValidateAutoCalculatedField(FieldName: Text; SuggestedAction: Text)
+    begin
+        Error('The %1 field is automatically calculated and cannot be manually entered.\%2', FieldName, SuggestedAction);
+    end;
+
     local procedure InitializeVariables()
     begin
         OriginalStartDate := Rec."Start Date";
@@ -712,44 +710,101 @@ field("Payment Method Description"; PaymentMethodDescription)
     local procedure SafeUpdateDisplayInfoWithCache()
     var
         CurrentTime: Time;
-        ShouldRefresh: Boolean;
+        CacheThreshold: Duration;
     begin
         CurrentTime := Time;
+        CacheThreshold := CacheValidSeconds * 1000; // Duration in ms
 
-        ShouldRefresh := SafeTimeComparison(CurrentTime, LastRefreshTime);
-
-        if ShouldRefresh then begin
-            SafeRefreshDisplayInfo();
+        // Refresh display info if cache expired
+        if (CurrentTime = 0T) or (LastRefreshTime = 0T) or ((CurrentTime - LastRefreshTime) > CacheThreshold) then begin
+            UpdateDepartmentDisplayText();
+            UpdateEndUserInfo();
             LastRefreshTime := CurrentTime;
         end;
-    end;
-
-    local procedure SafeTimeComparison(TimeA: Time; TimeB: Time): Boolean
-    var
-        CacheThresholdMs: Integer;
-    begin
-        CacheThresholdMs := CacheValidSeconds * 1000;
-
-        if TimeA = 0T then
-            exit(true);
-        if TimeB = 0T then
-            exit(true);
-
-        if Abs(TimeA - TimeB) > CacheThresholdMs then
-            exit(true)
-        else
-            exit(false);
-    end;
-
-    local procedure SafeRefreshDisplayInfo()
-    begin
-        UpdateDepartmentDisplayText();
-        UpdateEndUserInfo();
     end;
 
     local procedure SafeRefreshPage()
     begin
         CurrPage.Update(false);
+    end;
+
+    local procedure UpdateDepartmentDisplayText()
+    var
+        SubscriptionDept: Record "Department";
+        StringText: Text;
+        DepartmentCount: Integer;
+    begin
+        DepartmentDisplayText := '';
+        DepartmentCount := 0;
+
+        if Rec."No." = '' then begin
+            DepartmentDisplayText := '<Select Departments>';
+            Rec.Departments := DepartmentDisplayText;
+            if Rec."Subscription ID" <> 0 then begin
+                Rec.Modify(true);
+                Commit();
+            end;
+            exit;
+        end;
+
+        SubscriptionDept.SetRange("Subscription No.", Rec."No.");
+        SubscriptionDept.SetLoadFields("Department Code");
+
+        if SubscriptionDept.FindSet() then begin
+            repeat
+                DepartmentCount += 1;
+                if DepartmentCount <= 3 then begin
+                    if DepartmentCount > 1 then
+                        StringText += ', ';
+                    StringText += SubscriptionDept."Department Code";
+                end else begin
+                    StringText += '...';
+                    break;
+                end;
+            until SubscriptionDept.Next() = 0;
+
+            if DepartmentCount > 1 then
+                DepartmentDisplayText := StrSubstNo('%1 (%2 departments)', StringText, DepartmentCount)
+            else
+                DepartmentDisplayText := StringText;
+        end else
+            DepartmentDisplayText := '<Select Departments>';
+
+        Rec.Departments := DepartmentDisplayText;
+        if Rec."Subscription ID" <> 0 then begin
+            Rec.Modify(true);
+            Commit();
+        end;
+    end;
+
+    local procedure UpdatePrimaryEmployeeDisplay()
+    var
+        EmployeeExt: Record "Employee Ext";
+    begin
+        Clear(PrimaryEmployeeDisplay);
+
+        if PrimaryEmployeeNo <> '' then begin
+            if EmployeeExt.Get(PrimaryEmployeeNo) then
+                PrimaryEmployeeDisplay := EmployeeExt."Full Name"
+            else
+                PrimaryEmployeeDisplay := PrimaryEmployeeNo;
+        end else
+            PrimaryEmployeeDisplay := '';
+    end;
+
+    local procedure UpdateOwnerDisplay()
+    var
+        EmployeeExt: Record "Employee Ext";
+    begin
+        Clear(OwnerDisplay);
+
+        if Rec."End-user" <> '' then begin
+            if EmployeeExt.Get(Rec."End-user") then
+                OwnerDisplay := EmployeeExt."Full Name"
+            else
+                OwnerDisplay := Rec."End-user";
+        end else
+            OwnerDisplay := '';
     end;
 
     local procedure CalculateAmountLCY()
@@ -760,22 +815,22 @@ field("Payment Method Description"; PaymentMethodDescription)
     begin
         Rec."Amount in LCY" := 0;
 
-        if (Rec."Currency Code" = '') or (Rec.Amount = 0) then begin
-            if Rec."Currency Code" = '' then begin
-                GLSetup.Get();
-                if GLSetup."LCY Code" <> '' then
-                    Rec."Amount in LCY" := Rec.Amount;
-            end;
+        if Rec.Amount = 0 then
+            exit;
+
+        GLSetup.Get();
+
+        if (Rec."Currency Code" = '') or (Rec."Currency Code" = GLSetup."LCY Code") then begin
+            Rec."Amount in LCY" := Rec.Amount;
             exit;
         end;
 
         ExchangeRate := GetCurrentExchangeRate(Rec."Currency Code");
 
-        if ExchangeRate <> 0 then begin
-            Rec."Amount in LCY" := Rec.Amount * ExchangeRate;
-        end else begin
+        if ExchangeRate <> 0 then
+            Rec."Amount in LCY" := Rec.Amount * ExchangeRate
+        else
             Message('No exchange rate found for currency %1. Please set up exchange rates in the Currency Exchange Rates page.', Rec."Currency Code");
-        end;
     end;
 
     local procedure GetCurrentExchangeRate(CurrencyCode: Code[10]): Decimal
@@ -802,15 +857,15 @@ field("Payment Method Description"; PaymentMethodDescription)
                 exit(RelationalExchRateAmount / ExchangeRateAmount)
             else
                 exit(0);
-        end else begin
+        end else
             exit(0);
-        end;
     end;
 
     local procedure OpenSubscriptionEmployees()
     var
         EndUser: Record "End User";
         EndUserList: Page "End User List";
+        DeptFilter: Text;
     begin
         if Rec."No." = '' then begin
             Message('Please save the subscription first before managing end users.');
@@ -818,10 +873,15 @@ field("Payment Method Description"; PaymentMethodDescription)
         end;
 
         EndUser.SetRange("Subscription No.", Rec."No.");
+        // Also pass department filter when opening directly from here
+        DeptFilter := BuildDepartmentCodeFilter(Rec."No.");
+        if DeptFilter <> '' then
+            EndUser.SetFilter("Department Code", DeptFilter);
+
         EndUserList.SetTableView(EndUser);
         EndUserList.Run();
 
-        SafeRefreshDisplayInfo();
+        UpdateEndUserInfo();
         SafeRefreshPage();
     end;
 
@@ -844,6 +904,8 @@ field("Payment Method Description"; PaymentMethodDescription)
                     PrimaryEmployeeNo := EndUser."Employee No.";
                 EndUserCount += 1;
             until EndUser.Next() = 0;
+
+        UpdatePrimaryEmployeeDisplay();
     end;
 
     local procedure SelectMultipleDepartments()
@@ -859,6 +921,7 @@ field("Payment Method Description"; PaymentMethodDescription)
             if Rec."Subscription ID" = 0 then begin
                 if ShouldCreateRecord() then begin
                     Rec.Insert(true);
+                    Commit();
                     IsNewRecord := false;
                 end else begin
                     Message('Please enter basic subscription information first.');
@@ -872,6 +935,7 @@ field("Payment Method Description"; PaymentMethodDescription)
 
         SubscriptionDept.SetRange("Subscription No.", Rec."No.");
         SubscriptionDept.SetLoadFields("Department Code");
+
         if SubscriptionDept.FindSet() then
             repeat
                 if DepartmentMaster.Get(SubscriptionDept."Department Code") then begin
@@ -882,12 +946,13 @@ field("Payment Method Description"; PaymentMethodDescription)
 
         DepartmentList.SetSelectionFilter(TempDepartmentMaster);
         DepartmentList.LookupMode(true);
+
         if DepartmentList.RunModal() = Action::LookupOK then begin
             SubscriptionDept.SetRange("Subscription No.", Rec."No.");
             SubscriptionDept.DeleteAll(true);
 
             DepartmentList.GetSelectionFilter(TempDepartmentMaster);
-            if TempDepartmentMaster.FindSet() then begin
+            if TempDepartmentMaster.FindSet() then
                 repeat
                     SubscriptionDept.Init();
                     SubscriptionDept."Subscription No." := Rec."No.";
@@ -904,48 +969,11 @@ field("Payment Method Description"; PaymentMethodDescription)
 
                     SubscriptionDept.Insert(true);
                 until TempDepartmentMaster.Next() = 0;
-            end;
 
-            SafeRefreshDisplayInfo();
+            Commit();
+            UpdateDepartmentDisplayText();
+            CurrPage.Update(true);
         end;
-    end;
-
-    local procedure UpdateDepartmentDisplayText()
-    var
-        SubscriptionDept: Record "Department";
-        StringBuilder: TextBuilder;
-        DepartmentCount: Integer;
-    begin
-        DepartmentDisplayText := '';
-        DepartmentCount := 0;
-
-        if Rec."No." = '' then begin
-            DepartmentDisplayText := '<Select Departments>';
-            exit;
-        end;
-
-        SubscriptionDept.SetRange("Subscription No.", Rec."No.");
-        SubscriptionDept.SetLoadFields("Department Code");
-
-        if SubscriptionDept.FindSet() then begin
-            repeat
-                DepartmentCount += 1;
-                if DepartmentCount <= 3 then begin
-                    if DepartmentCount > 1 then
-                        StringBuilder.Append(', ');
-                    StringBuilder.Append(SubscriptionDept."Department Code");
-                end else begin
-                    StringBuilder.Append('...');
-                    break;
-                end;
-            until SubscriptionDept.Next() = 0;
-
-            if DepartmentCount > 1 then
-                DepartmentDisplayText := StrSubstNo('%1 (%2 departments)', StringBuilder.ToText(), DepartmentCount)
-            else
-                DepartmentDisplayText := StringBuilder.ToText();
-        end else
-            DepartmentDisplayText := '<Select Departments>';
     end;
 
     local procedure AutoSaveRecord()
@@ -959,12 +987,14 @@ field("Payment Method Description"; PaymentMethodDescription)
         if Rec."Subscription ID" = 0 then begin
             if ShouldCreateRecord() then begin
                 Rec.Insert(true);
+                Commit();
                 IsNewRecord := false;
             end;
         end else begin
             if (Rec."Start Date" <> OldStartDate) or (Rec."End Date" <> OldEndDate) then
                 Rec.CreateLedgerEntry("Subscription Change Type"::Update, OldStartDate, OldEndDate);
             Rec.Modify(true);
+            Commit();
         end;
 
         OriginalStartDate := Rec."Start Date";
@@ -1000,64 +1030,7 @@ field("Payment Method Description"; PaymentMethodDescription)
             exit;
         end;
 
-        case Rec."Billing Cycle" of
-            Rec."Billing Cycle"::Weekly:
-                Rec."End Date" := CalcDate('<+1W-1D>', Rec."Start Date");
-            Rec."Billing Cycle"::Monthly:
-                Rec."End Date" := CalcDate('<+1M-1D>', Rec."Start Date");
-            Rec."Billing Cycle"::Quarterly:
-                Rec."End Date" := CalcDate('<+3M-1D>', Rec."Start Date");
-            Rec."Billing Cycle"::Yearly:
-                Rec."End Date" := CalcDate('<+1Y-1D>', Rec."Start Date");
-            else
-                Rec."End Date" := CalcDate('<+1M-1D>', Rec."Start Date");
-        end;
-    end;
-
-    local procedure SafeUpdateEndDate()
-    var
-        OldStartDate: Date;
-        OldEndDate: Date;
-    begin
-        if Rec."Start Date" = 0D then begin
-            Message('Please enter a start date first.');
-            exit;
-        end;
-
-        if Rec."Start Date" < DMY2Date(1, 1, 1900) then begin
-            Message('Invalid start date. Please enter a valid date.');
-            exit;
-        end;
-
-        OldStartDate := Rec."Start Date";
-        OldEndDate := Rec."End Date";
-
-        case Rec."Billing Cycle" of
-            Rec."Billing Cycle"::Weekly:
-                if Rec."End Date" = 0D then
-                    Rec."End Date" := CalcDate('<+1W-1D>', Rec."Start Date")
-                else
-                    Rec."End Date" := CalcDate('<+1W>', Rec."End Date");
-            Rec."Billing Cycle"::Monthly:
-                if Rec."End Date" = 0D then
-                    Rec."End Date" := CalcDate('<+1M-1D>', Rec."Start Date")
-                else
-                    Rec."End Date" := CalcDate('<+1M>', Rec."End Date");
-            Rec."Billing Cycle"::Quarterly:
-                if Rec."End Date" = 0D then
-                    Rec."End Date" := CalcDate('<+3M-1D>', Rec."Start Date")
-                else
-                    Rec."End Date" := CalcDate('<+3M>', Rec."End Date");
-            Rec."Billing Cycle"::Yearly:
-                if Rec."End Date" = 0D then
-                    Rec."End Date" := CalcDate('<+1Y-1D>', Rec."Start Date")
-                else
-                    Rec."End Date" := CalcDate('<+1Y>', Rec."End Date");
-        end;
-
-        Rec.CreateLedgerEntry("Subscription Change Type"::Update, OldStartDate, OldEndDate);
-        Rec.Modify(true);
-        SafeRefreshPage();
+        Rec.CalculateEndDate();
     end;
 
     local procedure ProcessRenewal()
@@ -1077,7 +1050,7 @@ field("Payment Method Description"; PaymentMethodDescription)
             Rec.RenewSubscription();
             Rec.Modify(true);
 
-            SafeRefreshDisplayInfo();
+            UpdateEndUserInfo();
             SafeRefreshPage();
             SetConditionalFormatting();
             SetActionStates();
@@ -1105,7 +1078,7 @@ field("Payment Method Description"; PaymentMethodDescription)
             Rec.Status := Rec.Status::Cancelled;
             Rec.Modify(true);
 
-            SafeRefreshDisplayInfo();
+            UpdateEndUserInfo();
             SafeRefreshPage();
             SetConditionalFormatting();
             SetActionStates();
@@ -1113,34 +1086,6 @@ field("Payment Method Description"; PaymentMethodDescription)
             Message('Subscription "%1" status changed from %2 to %3.',
                 Rec."Service Name", OldStatus, Rec.Status);
         end;
-    end;
-
-    local procedure SaveAndGoToList()
-    var
-        ManageSubscriptionsPage: Page "Manage Subscriptions";
-        SubscriptionRec: Record "Subscription";
-    begin
-        if Rec."Service Name" = '' then
-            exit;
-
-        if Rec."Category Code" = '' then
-            exit;
-
-        if Rec.Amount = 0 then
-            exit;
-
-        if Rec."Subscription ID" = 0 then begin
-            if ShouldCreateRecord() then
-                Rec.Insert(true)
-            else
-                exit;
-        end else
-            Rec.Modify(true);
-
-        SubscriptionRec.SetRange("No.", Rec."No.");
-        ManageSubscriptionsPage.SetTableView(SubscriptionRec);
-        CurrPage.Close();
-        ManageSubscriptionsPage.Run();
     end;
 
     local procedure SetConditionalFormatting()
@@ -1174,31 +1119,26 @@ field("Payment Method Description"; PaymentMethodDescription)
         EndUsersEnabled := (Rec."No." <> '');
     end;
 
-    trigger OnQueryClosePage(CloseAction: Action): Boolean
+    // Build OR-filter of Department Codes for this Subscription
+    local procedure BuildDepartmentCodeFilter(SubscriptionNo: Code[20]): Text
     var
-        NothingEntered: Boolean;
-        ConfirmLbl: Label 'No data has been entered. Do you wish to exit and delete this record, or continue editing?', Locked = true;
+        SubscriptionDept: Record "Department"; // Link table: Subscription No. ↔ Department Code
+        FilterText: Text;
+        First: Boolean;
     begin
-        // Prompt only if the three fields are all empty
-        NothingEntered :=
-            (Rec."Service Name" = '') and
-            (Rec.Vendor = '') and
-            (Rec."Category Code" = '');
+        First := true;
+        SubscriptionDept.SetRange("Subscription No.", SubscriptionNo);
+        SubscriptionDept.SetLoadFields("Department Code");
 
-        if NothingEntered then begin
-            // Confirm(default = Cancel).  TRUE => OK, FALSE => Cancel
-            if not Confirm(ConfirmLbl, false) then
-                exit(false); // Cancel -> keep page open
+        if SubscriptionDept.FindSet() then
+            repeat
+                if not First then
+                    FilterText += '|';
+                FilterText += SubscriptionDept."Department Code";
+                First := false;
+            until SubscriptionDept.Next() = 0;
 
-            // OK -> if a row was actually inserted, delete it; otherwise just close.
-            // (Subscription ID <> 0 implies the record has been persisted; avoids delete errors)
-            if Rec."Subscription ID" <> 0 then
-                Rec.Delete(false); // delete without triggers to avoid ledger noise for an empty record
-
-            exit(true); // proceed to close
-        end;
-
-        exit(true); // no prompt needed; allow close
+        exit(FilterText);
     end;
-
 }
+

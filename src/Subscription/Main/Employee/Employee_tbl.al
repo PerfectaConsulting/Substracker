@@ -279,6 +279,15 @@ table 50120 "Employee Ext"
         key(Email; Email) { }
     }
 
+    // ✅ ADD THIS FIELDGROUPS SECTION FOR MULTI-COLUMN DROPDOWNS
+    fieldgroups
+    {
+        fieldgroup(DropDown; "No.", "Full Name", "Department Code", Status)
+        {
+            // This defines what columns show in dropdown lists when this table is used in TableRelation
+        }
+    }
+
     var
         EmployeeExtSetup: Record "Employee Ext Setup";
         NoSeries: Codeunit "No. Series";
@@ -332,7 +341,8 @@ table 50120 "Employee Ext"
             Error('Cannot delete employee %1 because they are a manager for other employees.', "No.");
     end;
 
-    // Procedures
+    // ... [Keep all your existing procedures exactly as they are] ...
+
     procedure AssistEdit(OldEmployeeExt: Record "Employee Ext"): Boolean
     var
         SelectedNoSeries: Code[20];

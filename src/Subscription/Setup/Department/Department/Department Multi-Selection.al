@@ -7,7 +7,9 @@ page 50125 "Department Multi-Selection"
     ShowFilter = true;
     MultipleNewLines = false;
 
-    // ── Layout ─────────────────────────────────────────────────────────
+    InsertAllowed = false;
+    DeleteAllowed = false;
+
     layout
     {
         area(content)
@@ -32,16 +34,42 @@ page 50125 "Department Multi-Selection"
                     end;
                 }
 
-                field(Code; Rec.Code) { ApplicationArea = All; Editable = false; }
-                field(Description; Rec.Description) { ApplicationArea = All; Editable = false; }
-                field(Blocked; Rec.Blocked) { ApplicationArea = All; Editable = false; }
+                field(Code; Rec.Code)
+                {
+                    ApplicationArea = All;
+                    Editable = false;
+                }
+
+                field(Description; Rec.Description)
+                {
+                    ApplicationArea = All;
+                    Editable = false;
+                }
+
+                field(Blocked; Rec.Blocked)
+                {
+                    ApplicationArea = All;
+                    Editable = false;
+                }
             }
         }
     }
 
-    // ── Actions ────────────────────────────────────────────────────────
     actions
     {
+        // ✅ Use area(creation) to place button before Edit List
+        area(creation)
+        {
+            action(ManageDepartments)
+            {
+                Caption = 'Manage Departments';
+                ApplicationArea = All;
+                Image = Departments;
+                ToolTip = 'Open the Departments page to manage department records.';
+                RunObject = Page "Departments";
+            }
+        }
+
         area(processing)
         {
             action(SelectAll)
@@ -49,6 +77,7 @@ page 50125 "Department Multi-Selection"
                 Caption = 'Select All';
                 ApplicationArea = All;
                 Image = Process;
+                ToolTip = 'Select all departments shown in the current view.';
 
                 trigger OnAction()
                 var
@@ -72,6 +101,7 @@ page 50125 "Department Multi-Selection"
                 Caption = 'Deselect All';
                 ApplicationArea = All;
                 Image = ClearFilter;
+                ToolTip = 'Clear all current selections.';
 
                 trigger OnAction()
                 begin
@@ -79,18 +109,25 @@ page 50125 "Department Multi-Selection"
                     CurrPage.Update(false);
                 end;
             }
+        }
 
-            action(OpenDepartmentList)
+        // ✅ Promoted actions with unique names
+        area(Promoted)
+        {
+            group(Management)
             {
-                Caption = 'Manage Departments';
-                ApplicationArea = All;
-                Image = EditList;   // ← valid icon (AL0482 resolved)
-                RunObject = Page "Departments";
+                Caption = 'Manage Department';
+                actionref(ManageDepartments_Ref; ManageDepartments) { }
+            }
+            group(Process)
+            {
+                Caption = 'Process';
+                actionref(SelectAll_Ref; SelectAll) { }
+                actionref(DeselectAll_Ref; DeselectAll) { }
             }
         }
     }
 
-    // ── Variables & Triggers ───────────────────────────────────────────
     var
         TempChosen: Record "Department Master" temporary;
         IsSelected: Boolean;
